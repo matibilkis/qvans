@@ -1,0 +1,13 @@
+executable=subash.sh
+optimizer=adam
+problem=H4
+args=$(Item) $(optimizer) $(problem)
+output = ../jobs/$(problem)_$(Item).out
+error = ../jobs/$(problem)_$(Item).err
+log = ../jobs/$(problem)_$(Item).log
+request_memory = 8 GB
+request_cpus = 6
+requirements= Has_avx == true
++flavour="workday"
+
+queue from seq 0.5 0.25 2.25|
