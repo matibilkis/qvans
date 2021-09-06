@@ -1,10 +1,8 @@
 <br />
 <p align="center">
-  <a href="https://github.com/matibilkis/vans.git">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
-  </a>
 
-  <h3 align="center">VANs: </h3>
+
+  <h3 align="center">|VANs> </h3>
 
   <p align="center">
     A semi-agnostic ansatz with variable structure for quantum machine learning
@@ -12,7 +10,7 @@
     <a href="https://arxiv.org/abs/2103.06712"><strong>Check out ArXiv preprint »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a>
+   <!-- <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a> -->
   </p>
 </p>
 
@@ -93,7 +91,7 @@ Have Python 3 installed.
   ```
 3. Install libraries
    ```sh
-  (NameOfVirtualEnv) pip3 install -r requirements.txt
+   (NameOfVirtualEnv) pip3 install -r requirements.txt
    ```
 4. Now you are ready to use VANs!
   ```sh
