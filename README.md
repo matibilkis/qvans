@@ -51,7 +51,7 @@ How would you walk through the architecture hyperspace to find your favorite qua
 * For this, we very much motivate the idea of optimizing both circuit parameters 𝗮𝗻𝗱 circuit structure in a semi-agnostic fashion :robot: :robot:.
 
 * This consists on randomly placing blocks of gates in the circuit, and accept or reject those modifications if the cost function is actually lowered or not. Crucially, we prevent the circuit from over-growing by applying some circuit-compression rules in a problem-informed way.
-  
+
 <p align="center">
 <img src="figures_readme/fig2.png" alt="Logo" style="width:300px;height:300px;">
 </p>
@@ -61,7 +61,7 @@ How would you walk through the architecture hyperspace to find your favorite qua
 <img src="figures_readme/fig3.jpeg" alt="Logo" style="width:300px;height:300px;">
 </p>
 
-### Built With
+## Built With
 
 This implementation of |VANs> has been written in Python 3, using
 * [Cirq](https://quantumai.google/cirq)
@@ -116,9 +116,9 @@ for n=4, J=0.5, g=1, we get
   ```sh
   python3 main.py --problem TFIM --J 0.6 --g 1 --n_qubits 4
   ```
-Importantly, the hyperparameters of the algorithm can be modified as well, feel free to peer at main.py file for all parsing arguments. 
+Importantly, the hyperparameters of the algorithm can be modified as well, feel free to peer at main.py file for all parsing arguments.
 
-Finally, it is ussually of great utility to sweep over a certain parameter(s). To that end, we use the meta_main.py (where, at the cost of elegancy, some templates can be found under commented format). For instance, if willing to sweep over J values (say, from 0.5 to 1.5), one would modify meta_main.py by setting 
+Finally, it is ussually of great utility to sweep over a certain parameter(s). To that end, we use the meta_main.py (where, at the cost of elegancy, some templates can be found under commented format). For instance, if willing to sweep over J values (say, from 0.5 to 1.5), one would modify meta_main.py by setting
 
     ```
     insts=[]
@@ -133,7 +133,7 @@ and consequently run it:
   ```sh
   python3 meta_main.py
   ```
- 
+
 <!-- CONTRIBUTING -->
 ## Contributing
 
