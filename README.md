@@ -2,10 +2,10 @@
 <p align="center">
 
 
-  <h3 align="center">|VANs> </h3>
+  <h1 align="center">|VANs> </h3>
 
   <p align="center">
-    A semi-agnostic ansatz with variable structure for quantum machine learning
+  <h2>A semi-agnostic ansatz with variable structure for quantum machine learning </h2>
     <br />
     <a href="https://arxiv.org/abs/2103.06712"><strong>Check out ArXiv preprint »</strong></a>
     <br />
@@ -19,7 +19,7 @@
   <summary>Table of Contents</summary>
   <ol>
     <li>
-      <a href="#about-the-project">VANs: an overview</a>
+      <a href="#overview">Overview</a>
       <ul>
         <li><a href="#built-with">Built With</a></li>
       </ul>
@@ -40,27 +40,30 @@
 
 
 <!-- ABOUT THE PROJECT -->
-## VANs: an overview
+## Overview
 
 How would you walk through the architecture hyperspace to find your favorite quantum circuit? How to do so when both intuition and gradients vanish? Just go for our Variable Ansatz (VAns) algorithm!
+  <p align="center">
+<img src="figures_readme/fig1.jpeg" style="width:500px;height:500px;">
+</p>
+* QML trains a parametrized quantum circuit to solve a given problem, encoded in some cost function. Depending on the circuit, this approach can potentially run into trouble, since trainability issues and quantum hardware noise essentially forbid the cost function to be minimized.
 
-<img src="figures_readme/fig1.jpeg" alt="Logo">
+* For this, we very much motivate the idea of optimizing both circuit parameters 𝗮𝗻𝗱 circuit structure in a semi-agnostic fashion :robot: :robot:.
 
-QML trains a parametrized quantum circuit to solve a given problem, encoded in some cost function. Depending on the circuit, this approach can potentially run into trouble, since trainability issues and quantum hardware noise essentially forbid the cost function to be minimized.
+* This consists on randomly placing blocks of gates in the circuit, and accept or reject those modifications if the cost function is actually lowered or not. Crucially, we prevent the circuit from over-growing by applying some circuit-compression rules in a problem-informed way.
+  
+<p align="center">
+<img src="figures_readme/fig2.png" alt="Logo" style="width:300px;height:300px;">
+</p>
 
-For this, we very much motivate the idea of optimizing both circuit parameters 𝗮𝗻𝗱 circuit structure in a semi-agnostic fashion :robot: :robot:.
-
-This consists on randomly placing blocks of gates in the circuit, and accept or reject those modifications if the cost function is actually lowered or not. Crucially, we prevent the circuit from over-growing by applying some circuit-compression rules in a problem-informed way.
-
-<img src="figures_readme/fig2.png" alt="Logo">
-
-In turn, this mechanism gets the most out of the available quantum resources. For example, in VQE, we find that cost value (energy) is lower than that of the circuits usually employed, if using the same resources.
-
-<img src="figures_readme/fig3.jpeg" alt="Logo">
+* In turn, this mechanism gets the most out of the available quantum resources. For example, in VQE, we find that cost value (energy) is lower than that of the circuits usually employed, if using the same resources.
+<p align="center">
+<img src="figures_readme/fig3.jpeg" alt="Logo" style="width:300px;height:300px;">
+</p>
 
 ### Built With
 
-This implementation of VANs |:shoes:> has been written in Python 3, using
+This implementation of |VANs> has been written in Python 3, using
 * [Cirq](https://quantumai.google/cirq)
 * [TensorFlowQuantum](https://www.tensorflow.org/quantum)
 * [OpenFermion](https://quantumai.google/openfermion)
@@ -125,12 +128,12 @@ Finally, it is ussually of great utility to sweep over a certain parameter(s). T
         instruction = "python3 main.py --n_qubits 4 --problem_config {}".format(problem_config)
         insts.append(instruction)
     ```
-and then run
+and consequently run it:
 
   ```sh
   python3 meta_main.py
   ```
-  
+ 
 <!-- CONTRIBUTING -->
 ## Contributing
 
