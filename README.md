@@ -56,7 +56,7 @@ This consists on randomly placing blocks of gates in the circuit, and accept or 
 
 In turn, this mechanism gets the most out of the available quantum resources. For example, in VQE, we find that cost value (energy) is lower than that of the circuits usually employed, if using the same resources.
 
-<img src="figures_readme/fig3.png" alt="Logo">
+<img src="figures_readme/fig3.jpeg" alt="Logo">
 
 ### Built With
 
@@ -102,10 +102,35 @@ Have Python 3 installed.
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+The code we present comes with a series of pre-defined Hamiltonians and cost functions. It is up to the user to define new hamiltonians, which are Transverse Field Ising Model (TFIM), XXZ model, chemical hamiltonians (H2, H4, LiH) and the autoencoder.
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+Note that each of the pre-defined Hamiltonians has one (or more) free paramters, such as magnetic field strengths or bond lengths. This setting can be specified by parsing arguments to main.py file. For example, if willing to work with the TFIM, given by for a configuration of TFIM,
 
+   <a href="https://www.codecogs.com/eqnedit.php?latex=H=-J\sum_{j=1}^n&space;\sigma_j^x\sigma_{j&plus;1}^x-g\sum_{j=1}^n&space;\sigma_j^x\,," target="_blank"><img src="https://latex.codecogs.com/gif.latex?H=-J\sum_{j=1}^n&space;\sigma_j^x\sigma_{j&plus;1}^x-g\sum_{j=1}^n&space;\sigma_j^x\,," title="H=-J\sum_{j=1}^n \sigma_j^x\sigma_{j+1}^x-g\sum_{j=1}^n \sigma_j^x\,," /></a>
+
+for n=4, J=0.5, g=1, we get
+
+  ```sh
+  python3 main.py --problem TFIM --J 0.6 --g 1 --n_qubits 4
+  ```
+Importantly, the hyperparameters of the algorithm can be modified as well, feel free to peer at main.py file for all parsing arguments. 
+
+Finally, it is ussually of great utility to sweep over a certain parameter(s). To that end, we use the meta_main.py (where, at the cost of elegancy, some templates can be found under commented format). For instance, if willing to sweep over J values (say, from 0.5 to 1.5), one would modify meta_main.py by setting 
+
+    ```
+    insts=[]
+    js = np.arange(0.5,1.6,0.1)
+    for J in js:
+        problem_config = dict_to_json({"problem" : "TFIM", "g":1.0, "J": bond})
+        instruction = "python3 main.py --n_qubits 4 --problem_config {}".format(problem_config)
+        insts.append(instruction)
+    ```
+and then run
+
+  ```sh
+  python3 meta_main.py
+  ```
+  
 <!-- CONTRIBUTING -->
 ## Contributing
 
