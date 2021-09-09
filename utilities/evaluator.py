@@ -49,28 +49,26 @@ class Evaluator(Basic):
                 args["specific_name"] = ""
 
             problem_identifier = self.get_problem_identifier(args["problem_config"])
-            noise_identifier = self.get_noise_identifier(args["noise_config"])
-            self.identifier = "{}/N{}_{}_{}".format(args["problem_config"]["problem"],args["n_qubits"],problem_identifier, noise_identifier)+args["specific_name"]
+            self.identifier = "{}/N{}_{}_{}".format(args["problem_config"]["problem"],args["n_qubits"],problem_identifier)+args["specific_name"]
 
             self.directory = self.create_folder(info)
             self.acceptance_percentage = acceptance_percentage
 
         else:
             args_load={}
-            for str,default in zip(["n_qubits", "problem_config", "noise_config","specific_name","load_displaying"], [4, {"problem":"TFIM", "g":1.0, "J": 0.0}, {}, None,False]):
+            for str,default in zip(["n_qubits", "problem_config","specific_name","load_displaying"], [4, {"problem":"TFIM", "g":1.0, "J": 0.0}, None,False]):
                 if str not in list(args.keys()):
                     args_load[str] = default
                 else:
                     args_load[str] = args[str]
             problem_identifier = self.get_problem_identifier(args_load["problem_config"])
-            noise_identifier = self.get_noise_identifier(args_load["noise_config"])
 
             if "specific_folder_name" not in list(args.keys()):
                 if args_load["specific_name"] is None:
                     ap=""
                 else:
                     ap = args_load["specific_name"]
-                self.identifier = "{}/N{}_{}_{}".format(args["problem_config"]["problem"],args_load["n_qubits"],problem_identifier, noise_identifier)+ap
+                self.identifier = "{}/N{}_{}_".format(args["problem_config"]["problem"],args_load["n_qubits"],problem_identifier)+ap
             else:
                 self.identifier = "{}/{}".format(args["problem_config"]["problem"], args["specific_folder_name"])
             self.load(args_load,nrun=nrun_load, load_displaying = args_load["load_displaying"]) #this is because i changed this abit...
@@ -100,17 +98,6 @@ class Evaluator(Basic):
             id="BAD_LABEL_{}".format(args)
         return id
 
-    def get_noise_identifier(self, noise_config):
-        if noise_config == {}:
-            id = "quiet"
-        else:
-            id=""
-            for key in ["channel"]:#"shots",
-                if key in list(noise_config.keys()):
-                    id+="{}_{}".format(key,noise_config[key])
-            if id=="":
-                raise NameError("could not get noise label from noise_config. Fed dict is {}".format(noise_config))
-        return id
 
     def create_folder(self, info):
         """
@@ -184,9 +171,8 @@ class Evaluator(Basic):
         #     self.displaying = a
         return
 
-    def accept_energy(self, E, noise=False):
+    def accept_energy(self, E):
         """
-        in the presence of noise, don't give gates for free!
         E: energy after some optimization (to be accepted or not).
         For the moment we leave the same criteria for the noisy scenario also.
         """

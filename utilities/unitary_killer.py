@@ -6,16 +6,16 @@ import tensorflow_quantum as tfq
 import tensorflow as tf
 
 class UnitaryMurder(Basic):
-    def __init__(self, vqe_handler, noise_config,testing=False, accept_wall=1e5):
+    def __init__(self, vqe_handler,testing=False, accept_wall=1e5):
         """
         Scans a circuit, evaluates mean value of observable and retrieves a shorter circuit if the energy is not increased too much.
 
-        Takes as input vqe_handler object inheriting its observable and noise attributes.
+        Takes as input vqe_handler object inheriting its observable
 
         The expected value of hamiltonian is computed via vqe_handler.give_energy(indexed_circuit, resolver). Importantly, for noisy channels that are decomposed as sum of unitary transf, the accuracy of this expectation will depend on the q_batch_size (how many circuits we are considering, each suffering from each unitary transf with the corresponding probability)
 
         """
-        super(UnitaryMurder, self).__init__(n_qubits=vqe_handler.n_qubits, testing=testing, noise_config=noise_config)
+        super(UnitaryMurder, self).__init__(n_qubits=vqe_handler.n_qubits, testing=testing)
         self.single_qubit_unitaries = {"rx":cirq.rx, "rz":cirq.rz}
         self.observable = vqe_handler.observable
         self.initial_energy = -np.inf #this is to compare with iniital_energy, at each round
@@ -26,24 +26,13 @@ class UnitaryMurder(Basic):
         indexed_circuit: list with integers that correspond to unitaries (target qubit deduced from the value)
         symbols_to_values: dictionary with the values of each symbol. Importantly, they should respect the order of indexed_circuit, i.e. list(symbols_to_values.keys()) = self.give_circuit(indexed_circuit)[1]
 
-        if self.noise is True, we've a noise model!
-        Every detail of the noise model is inherited from circuit_basics
         """
 
-        if self.noise is True:
-            circuit, symbols, index_to_symbol = self.give_circuit_with_noise(indexed_circuit)
-            tt = []
-            for c in circuit:
-                tt.append(cirq.resolve_parameters(c, symbols_to_values))
-            tfqcircuit = tfq.convert_to_tensor(tt)
-            tfq_layer = tfq.layers.Expectation()(tfqcircuit, operators=tfq.convert_to_tensor([self.observable]*self.q_batch_size))
-            averaged_unitaries = tf.math.reduce_mean(tfq_layer, axis=0)
-            energy = np.squeeze(tf.math.reduce_sum(averaged_unitaries, axis=-1))
-        else:
-            circuit, symbols, index_to_symbol = self.give_circuit(indexed_circuit)
-            tfqcircuit = tfq.convert_to_tensor([cirq.resolve_parameters(circuit, symbols_to_values)])
-            tfq_layer = tfq.layers.Expectation()(tfqcircuit, operators=tfq.convert_to_tensor([self.observable]*self.q_batch_size))
-            energy = np.squeeze(tf.math.reduce_sum(tfq_layer, axis=-1))
+
+        circuit, symbols, index_to_symbol = self.give_circuit(indexed_circuit)
+        tfqcircuit = tfq.convert_to_tensor([cirq.resolve_parameters(circuit, symbols_to_values)])
+        tfq_layer = tfq.layers.Expectation()(tfqcircuit, operators=tfq.convert_to_tensor([self.observable]*self.q_batch_size))
+        energy = np.squeeze(tf.math.reduce_sum(tfq_layer, axis=-1))
         return energy
 
 
@@ -84,7 +73,7 @@ class UnitaryMurder(Basic):
                 pass
             else:
                 info_gate = [index_victim, victim]
-                valid, proposal_circuit, proposal_symbols_to_values, prop_cirq_circuit = self.create_proposal_without_gate(info_gate) #notice prop_cirq_circuit beomes useless if noise.-
+                valid, proposal_circuit, proposal_symbols_to_values, prop_cirq_circuit = self.create_proposal_without_gate(info_gate) 
                 if valid:
                     proposal_energy = self.give_energy(proposal_circuit, proposal_symbols_to_values)
 

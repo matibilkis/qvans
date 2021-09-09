@@ -11,20 +11,16 @@ import signal
 
 
 class Basic:
-    def __init__(self, n_qubits=3, testing=False, noise_config={}):
+    def __init__(self, n_qubits=3, testing=False):
         """
         n_qubits: number of qubits on your ansatz
 
         testing: this is inherited by other classes to ease the debugging.
 
-        noise_config: implemented in batches.
-            if self.noise_config = {} ---> no noise
-            else: passed thorugh the Basic, to inherit the circuit_with_noise
-                if should be in the form of {"channel":"depolarizing", "channel_params":array, "q_batch_size":int}
-
         """
         self.n_qubits = n_qubits
         self.qubits = cirq.GridQubit.rect(1, n_qubits)
+        self.q_batch_size=1 #This survived from noisy implementation (which turned out to be too slow)
 
         #### keep a register on which integers corresponds to which CNOTS, target or control.
         self.indexed_cnots = {}
@@ -39,33 +35,7 @@ class Basic:
         self.number_of_cnots = len(self.indexed_cnots)
 
         self.testing=testing
-        if not isinstance(noise_config, dict):
-            print("noise_config should be passed as dict, in a form of, see docs")
-        elif noise_config == {} :
-            self.q_batch_size = 1
-            self.noise=False
-        else:
-            self.define_channel_things(noise_config)
 
-    def define_channel_things(self, noise_config):
-        """
-        options: "depolarizing" (symetric depolarizing channel) {"channel":"depolarizing", "channel_params":[p], "q_batch_size":10**3}
-        """
-        self.noise = True
-        self.channel = noise_config["channel"]
-        try:
-            self.channel_params = eval(noise_config["channel_params"])
-            self.q_batch_size = eval(noise_config["q_batch_size"])
-        except Exception or Error: #if you are not passing from parser args
-            self.channel_params = noise_config["channel_params"]
-            self.q_batch_size = noise_config["q_batch_size"]
-        if self.channel == "depolarizing":
-            self.channel_unitaries = [cirq.I, cirq.X, cirq.Y, cirq.Z]
-            self.number_noisy_unitaries = len(self.channel_unitaries)
-            p = self.channel_params[0]
-            self.channel_params = [1-p, p/3, p/3, p/3]
-            #self.number_noisy_unitaries, self.channel_unitaries, self.channel_params
-            return
 
     def append_to_circuit(self, ind, circuit, params, index_to_symbols):
         """
@@ -114,60 +84,6 @@ class Basic:
                 index_to_symbols[len(list(index_to_symbols.keys()))] = new_param
             return circuit, params, index_to_symbols
 
-    def append_to_circuit_with_noise(self, ind, circuit, params, index_to_symbols):
-        """
-        ind: integer describing the gate to append to circuit
-        circuit: cirq object that describes the quantum circuit
-        params: a list containing the symbols appearing in the circuit so far
-        index_to_sybols: tells which symbol corresponds to i^{th} item in the circuit (useful for simplifier)
-
-        Note. This is the noisy version, in randomly choose unitaries before each gate is placed (if a CNOT is placed we add gate on both
-        control and target). self.channel_unitaries is a list with the unitary transf into which the channel is decomposed, of length self.number_noisy_unitaries.
-        """
-
-        #### add CNOT
-        if ind < self.number_of_cnots:
-            control, target = self.indexed_cnots[str(ind)]
-            #adding noise
-            ngates = np.random.choice(self.channel_unitaries, 2,p=self.channel_params)
-            for ng,nq in zip(ngates,[control,target]):
-                circuit.append(ng.on(self.qubits[nq]))
-
-            circuit.append(cirq.CNOT.on(self.qubits[control], self.qubits[target]))
-            if isinstance(index_to_symbols,dict):
-                index_to_symbols[len(list(index_to_symbols.keys()))] = []
-                return circuit, params, index_to_symbols
-            else:
-                return circuit, params
-
-        #### add rz #####
-        elif 0 <= ind - self.number_of_cnots  < self.n_qubits:
-            qubit = self.qubits[(ind-self.number_of_cnots)%self.n_qubits]
-            for par, gate in zip(range(1),[cirq.rz]):
-                new_param = "th_"+str(len(params))
-                params.append(new_param)
-
-                #adding noise
-                ng = np.random.choice(self.channel_unitaries,1, p=self.channel_params)[0]
-                circuit.append(ng.on(qubit))
-
-                circuit.append(gate(sympy.Symbol(new_param)).on(qubit))
-                index_to_symbols[len(list(index_to_symbols.keys()))] = new_param
-                return circuit, params, index_to_symbols
-
-        #### add rx #####
-        elif self.n_qubits <= ind - self.number_of_cnots  < 2*self.n_qubits:
-            qubit = self.qubits[(ind-self.number_of_cnots)%self.n_qubits]
-            for par, gate in zip(range(1),[cirq.rx]):
-                new_param = "th_"+str(len(params))
-                params.append(new_param)
-                #adding noise
-                ng = np.random.choice(self.channel_unitaries,1, p=self.channel_params)[0]
-                circuit.append(ng.on(qubit))
-
-                circuit.append(gate(sympy.Symbol(new_param)).on(qubit))
-                index_to_symbols[len(list(index_to_symbols.keys()))] = new_param
-            return circuit, params, index_to_symbols
 
     def give_circuit(self, lista):
         """
@@ -192,24 +108,6 @@ class Basic:
         return indexed_circuit[::-1], res_in, unitary
 
 
-    def give_circuit_with_noise(self, lista):
-        """
-        noisy version of self.give_circuit(list).
-        It retrieves a batch of circuits, each one deterministically evolved under the channel (assuming the channel applyies unitary trasnformations with a given probability, given by self.channel_params).
-
-        retrieves (batch of) circuits (cirq object), of len(self.q_batch_size), with a list of each continuous parameter (symbols) and dictionary index_to_symbols giving the symbols for each position (useful for simplifier).
-
-        lista: list of integers in [0, 2*n + n(n-1)), with n = self.number_qubits. Each integer describes a possible unitary (CNOT, rx, rz).
-        """
-        qbatch=[]
-        for cind in range(self.q_batch_size):
-            circuit, symbols, index_to_symbols = [], [], {}
-            for k in lista:
-                circuit, symbols, index_to_symbols = self.append_to_circuit_with_noise(k,circuit,symbols, index_to_symbols)
-            circuit = cirq.Circuit(circuit)
-            qbatch.append(circuit)
-        return qbatch, symbols, index_to_symbols
-
 
     def give_unitary(self,idx, res):
         """
@@ -223,7 +121,6 @@ class Basic:
     def give_qubit(self, ind):
         """
         returns a list of qubits affected by gate indexed via ind
-        used for cirq.insert_batch in the noise
         """
         if ind < self.number_of_cnots:
             return self.indexed_cnots[str(ind)]
@@ -343,3 +240,6 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
             return result
         return wraps(func)(wrapper)
     return decorator
+
+def overlap(st1, st2):
+    return np.dot(np.conjugate(st1), st2)

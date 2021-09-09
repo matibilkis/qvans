@@ -96,7 +96,7 @@ class EnergyLoss(tf.keras.losses.Loss):
         super(EnergyLoss,self).__init__()
         self.mode_var = mode_var
     def call(self, y_true, y_pred):
-        #reduce_mean in case we have a batch of circuits (for the noise) otherwise it's
+        #reduce_mean in case we have a batch of circuits (for the autoencoder) otherwise it's
         if self.mode_var == "autoencoder":
             return 1-(tf.math.reduce_mean(y_pred,axis=-1))
         else:

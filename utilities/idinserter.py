@@ -27,7 +27,7 @@ class IdInserter(Basic):
         gate_type: "one-qubit" or "two-qubit"
         ngates: gate_counter_on_qubits
 
-        Note that beta could be annealed as energy decreases.. (at beta = 0 we get uniform sampling)
+        Note that selector_temperature could be annealed as energy decreases.. (at beta = 0 we get uniform sampling)
         function that selects qubit according to how many gates are acting on each one in the circuit
         """
         if gate_type == "one-qubit":

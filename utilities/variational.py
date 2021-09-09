@@ -1,7 +1,7 @@
 import numpy as np
 import cirq
 import tensorflow_quantum as tfq
-from utilities.circuit_basics import Basic
+from utilities.circuit_basics import Basic, overlap
 import tensorflow as tf
 import time
 from utilities.chemical import ChemicalObservable
@@ -10,15 +10,13 @@ import copy
 
 class VQE(Basic):
     def __init__(self, n_qubits=3, lr=0.01, optimizer="sgd", epochs=1000, patience=200,
-                 verbose=0, noise_config={}, problem_config={}, return_lower_bound=True, max_vqe_time=120):
+                 verbose=0, problem_config={}, return_lower_bound=True, max_vqe_time=120):
         """
         lr: learning_rate for each iteration of gradient descent
         optimizer: we give two choices, Adam and SGD. If SGD, we implement Algorithm 4 of qacq to adapt learning rate.
         epochs: number of gradient descent iterations (in this project)
         patience: EarlyStopping parameter
         verbose: display progress or not
-
-        noise_config:see circuit_basics (inherits properties from the circuit_with_noise)
 
         problem_config: dictionary that specifies the structure of the hamiltonian. Its keys will depend on the problem.
                         condensed matter:
@@ -42,7 +40,7 @@ class VQE(Basic):
                (4) Note that we construct the circuit according to the number of qubits required, we should add a bool check in case circuit's qubits are not enough in chemical.py
         """
 
-        super(VQE, self).__init__(n_qubits=n_qubits, noise_config=noise_config)
+        super(VQE, self).__init__(n_qubits=n_qubits)
 
 
         #### MACHINE LEARNING CONFIGURATION
@@ -58,8 +56,7 @@ class VQE(Basic):
 
         ##### HAMILTONIAN CONFIGURATION
         self.observable = self.give_observable(problem_config)
-        #### NOISE CONFIGURATION
-        ### this is inherited from circuit_basics: self.noise, self.q_batch_size
+        ### this is inherited from circuit_basics:  self.q_batch_size
         if self.return_lower_bound is True:
             self.lower_bound_energy = self.compute_ground_energy()
         else:
@@ -125,6 +122,11 @@ class VQE(Basic):
         else:
             raise NotImplementedError("The specified hamiltonian is in the list but we have not added to the code yet! Devs, take a look here!\problem_config[problem]: {}".format(problem_config["problem"].upper()))
 
+    def give_energy(self, indexed_circuit, resolver):
+        uni = cirq.unitary(self.give_unitary(indexed_circuit, resolver))
+        st = uni[:,0]
+        H = sum(self.observable).matrix()
+        return overlap(st, np.dot(H,st))
 
     def vqe(self, indexed_circuit, symbols_to_values=None, parameter_perturbation_wall=0.5):
         """
@@ -132,17 +134,11 @@ class VQE(Basic):
 
         symbols_to_values: dictionary with the values of each symbol. Importantly, they should respect the order of indexed_circuit, i.e. list(symbols_to_values.keys()) = self.give_circuit(indexed_circuit)[1]
 
-        if self.noise is True, we've a noise model!
-        Every detail of the noise model is inherited from circuit_basics
-
         parameter_perturbation_wall:
         """
-        if self.noise is False:
-            circuit, symbols, index_to_symbol = self.give_circuit(indexed_circuit)
-            tfqcircuit = tfq.convert_to_tensor([circuit])
-        else:
-            circuit, symbols, index_to_symbol = self.give_circuit_with_noise(indexed_circuit)
-            tfqcircuit = tfq.convert_to_tensor(circuit)
+        circuit, symbols, index_to_symbol = self.give_circuit(indexed_circuit)
+        tfqcircuit = tfq.convert_to_tensor([circuit])
+
 
         model = QNN(symbols=symbols, observable=self.observable, batch_sizes=self.q_batch_size)
         model(tfqcircuit) #this defines the weigths
@@ -180,16 +176,11 @@ class VQE(Basic):
         """
         This function is only for testing. If there's not parametrized unitary on every qubit, raise error (otherwise TFQ runs into trouble).
         """
-        if self.noise is True:
-            effective_qubits = list(circuit[0].all_qubits())
-            for k in self.qubits:
-                if k not in effective_qubits:
-                    raise Error("NOT ALL QUBITS AFFECTED")
-        else:
-            effective_qubits = list(circuit[0].all_qubits())
-            for k in self.qubits:
-                if k not in effective_qubits:
-                    raise Error("NOT ALL QUBITS AFFECTED")
+
+        effective_qubits = list(circuit[0].all_qubits())
+        for k in self.qubits:
+            if k not in effective_qubits:
+                raise Error("NOT ALL QUBITS AFFECTED")
 
 
 
@@ -223,7 +214,7 @@ class Autoencoder(Basic):
     def __init__(self, many_indexed_circuits, many_symbols_to_values, n_qubits=3, lr=0.01, optimizer="sgd", epochs=1000, patience=200,
                  verbose=0,problem_config={},nb=1):
 
-        super(Autoencoder, self).__init__(n_qubits=n_qubits, noise_config={})
+        super(Autoencoder, self).__init__(n_qubits=n_qubits)
 
 
         #### MACHINE LEARNING CONFIGURATION
@@ -319,13 +310,8 @@ class Autoencoder(Basic):
         """
         This function is only for testing. If there's not parametrized unitary on every qubit, raise error (otherwise TFQ runs into trouble).
         """
-        if self.noise is True:
-            effective_qubits = list(circuit[0].all_qubits())
-            for k in self.qubits:
-                if k not in effective_qubits:
-                    raise Error("NOT ALL QUBITS AFFECTED")
-        else:
-            effective_qubits = list(circuit[0].all_qubits())
-            for k in self.qubits:
-                if k not in effective_qubits:
-                    raise Error("NOT ALL QUBITS AFFECTED")
+
+        effective_qubits = list(circuit[0].all_qubits())
+        for k in self.qubits:
+            if k not in effective_qubits:
+                raise Error("NOT ALL QUBITS AFFECTED")

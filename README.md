@@ -100,7 +100,10 @@ Have Python 3 installed.
   ```sh
   (NameOfVirtualEnv) python3 meta_main.py
   ```
-
+5. You might also want to run the tutorials from the virtual environment and thus need to configure the jupyter notebook (that's why jupyter is included in the requirements.txt). To configure it, simple run
+```sh
+(NameOfVirtualEnv) ipython kernel --user --name NameOfVirtualEnv
+```
 
 <!-- USAGE EXAMPLES -->
 ## Usage

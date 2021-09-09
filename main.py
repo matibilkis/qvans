@@ -1,9 +1,7 @@
 import os
-import gc
 import numpy as np
 import sympy
 import cirq
-
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow_quantum as tfq
 from tqdm import tqdm
@@ -32,7 +30,6 @@ if __name__ == "__main__":
     parser.add_argument("--path_results", type=str, default="../data-vans/")
     parser.add_argument("--specific_name", type=str, default="")
     parser.add_argument("--problem_config", type=json.loads, default='{}')
-    parser.add_argument("--noise_config", type=json.loads, default='{}')
 
     ### VQE handler options
     parser.add_argument("--qepochs", type=int, default=10000)
@@ -60,14 +57,13 @@ if __name__ == "__main__":
     begin = datetime.now()
     #VQE module, in charge of continuous optimization
     vqe_handler = VQE(n_qubits=args.n_qubits, lr=args.qlr, epochs=args.qepochs, verbose=args.verbose,
-                        noise_config=args.noise_config, problem_config=args.problem_config,
+                        problem_config=args.problem_config,
                         patience=args.training_patience, return_lower_bound=[True, False][args.return_lower_bound],
                         optimizer=args.optimizer, max_vqe_time=args.max_vqe_time)
 
     start = datetime.now()
 
     info = f"len(n_qubits): {vqe_handler.n_qubits}\n" \
-                        f"noise: {args.noise_config}\n"\
                         f"qlr: {vqe_handler.lr}\n" \
                         f"qepochs: {vqe_handler.epochs}\n" \
                         f"patience: {vqe_handler.patience}\n" \
@@ -104,7 +100,7 @@ if __name__ == "__main__":
     Simp = Simplifier(n_qubits=len(vqe_handler.qubits))
 
     #UnitaryMuerder is in charge of evaluating changes on the energy while setting apart one (or more) parametrized gates. If
-    killer = UnitaryMurder(vqe_handler, noise_config=args.noise_config, accept_wall=2/evaluator.acceptance_percentage)
+    killer = UnitaryMurder(vqe_handler, accept_wall=2/evaluator.acceptance_percentage)
 
     if args.initialization == "hea":
         indexed_circuit = vqe_handler.hea_ansatz_indexed_circuit(L=max(1,args.init_layers_hea))
@@ -176,6 +172,3 @@ if __name__ == "__main__":
         else:
             if evaluator.reduce_acceptance_percentage == True:
                 killer.acceptance_percentage=2/evaluator.acceptance_percentage
-
-
-### [Note 1]: Even if the circuit gets simplified to the original one, it's harmless to compute the energy again since i) you give another try to the optimization, ii) we have the EarlyStopping and despite of the added noise, it's supossed the seeds are close to optima.
