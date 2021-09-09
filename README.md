@@ -13,7 +13,7 @@
    <!-- <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a> -->
   </p>
 </p>
-
+<p> This repository contains a code implementation of the pre-print "A semi-agnostic ansatz with variable structure for quantum machine learning".</p>
 <!-- TABLE OF CONTENTS -->
 <details open="open">
   <summary>Table of Contents</summary>
