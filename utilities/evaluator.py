@@ -5,7 +5,9 @@ import os
 from datetime import datetime
 
 class Evaluator(Basic):
-    def __init__(self, args, info=None, loading=False, acceptance_percentage = 0.01, reduce_acceptance_percentage=True,accuracy_to_end=-np.inf,
+    def __init__(self, args, info="", loading=False,
+                acceptance_percentage = 0.01, reduce_acceptance_percentage=True,
+                accuracy_to_end=-np.inf,
                 nrun_load=0, path="/data/uab-giq/scratch/matias/data-vans/"):
         """
 
@@ -18,6 +20,8 @@ class Evaluator(Basic):
 
 
         args: is a dictionary version of the parser.args.
+        acceptance_percentage: up to which value an increase in relative energy is accepted or not
+
         Example:
         args={"n_qubits":8,"problem_config":{"problem" : "XXZ", "g":1.0, "J": j}, "specific_name":"XXZ/8Q - J {} g 1.0".format(j)}
 
@@ -49,7 +53,7 @@ class Evaluator(Basic):
                 args["specific_name"] = ""
 
             problem_identifier = self.get_problem_identifier(args["problem_config"])
-            self.identifier = "{}/N{}_{}_{}".format(args["problem_config"]["problem"],args["n_qubits"],problem_identifier)+args["specific_name"]
+            self.identifier = "{}/{}Qbits_{}_".format(args["problem_config"]["problem"],args["n_qubits"],problem_identifier)+args["specific_name"]
 
             self.directory = self.create_folder(info)
             self.acceptance_percentage = acceptance_percentage
@@ -68,14 +72,10 @@ class Evaluator(Basic):
                     ap=""
                 else:
                     ap = args_load["specific_name"]
-                self.identifier = "{}/N{}_{}_".format(args["problem_config"]["problem"],args_load["n_qubits"],problem_identifier)+ap
+                self.identifier = "{}/{}Qbits_{}_".format(args["problem_config"]["problem"],args_load["n_qubits"],problem_identifier)+ap
             else:
                 self.identifier = "{}/{}".format(args["problem_config"]["problem"], args["specific_folder_name"])
             self.load(args_load,nrun=nrun_load, load_displaying = args_load["load_displaying"]) #this is because i changed this abit...
-
-                #if args_load["specific_name"] is None:
-                           # else:
-               #     self.load_from_name(args_load["specific_name"], nrun=nrun_load)
 
     def get_problem_identifier(self, args):
         #### read possible hamiltonians to get id structure
@@ -171,7 +171,7 @@ class Evaluator(Basic):
         #     self.displaying = a
         return
 
-    def accept_energy(self, E):
+    def accept_energy(self, E, decrease_only=False):
         """
         E: energy after some optimization (to be accepted or not).
         For the moment we leave the same criteria for the noisy scenario also.
@@ -179,7 +179,10 @@ class Evaluator(Basic):
         if self.lowest_energy is None:
             return True
         else:
-            return (E-self.lowest_energy)/np.abs(self.lowest_energy) < self.acceptance_percentage
+            if decrease_only == True:
+                return E<self.lowest_energy
+            else:
+                return (E-self.lowest_energy)/np.abs(self.lowest_energy) < self.acceptance_percentage
 
     def get_best_iteration(self):
         """
@@ -211,7 +214,7 @@ class Evaluator(Basic):
             self.acceptance_percentage*=0.9
         return
 
-    def add_step(self,indices, resolver, energy, relevant=True):
+    def add_step(self,indices, resolver, energy,relevant=True):
         """
         indices: list of integers describing circuit to save
         resolver: dictionary with the corresponding circuit's symbols

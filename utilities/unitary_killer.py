@@ -37,7 +37,7 @@ class UnitaryMurder(Basic):
 
 
 
-    def unitary_slaughter(self, indexed_circuit, symbol_to_value, index_to_symbols,reference_energy):
+    def unitary_slaughter(self, indexed_circuit, symbol_to_value, index_to_symbols,reference_energy, displaying=False):
         max_its = len(indexed_circuit)
         reduced = True
         count=0
@@ -46,7 +46,8 @@ class UnitaryMurder(Basic):
                 self.initial_energy = reference_energy
             indexed_circuit, symbol_to_value, index_to_symbols, energy, reduced = self.kill_one_unitary(indexed_circuit, symbol_to_value, index_to_symbols)
             count+=1
-            print("I killed {} unitaries, Ef - Ei: {}".format(count, energy-self.initial_energy))
+            if displaying == True:
+                print("I killed {} unitaries, Ef - Ei: {}".format(count, energy-self.initial_energy))
         return indexed_circuit, symbol_to_value, index_to_symbols, energy, reduced
 
     def kill_one_unitary(self, indexed_circuit, symbol_to_value, index_to_symbols):
@@ -73,7 +74,7 @@ class UnitaryMurder(Basic):
                 pass
             else:
                 info_gate = [index_victim, victim]
-                valid, proposal_circuit, proposal_symbols_to_values, prop_cirq_circuit = self.create_proposal_without_gate(info_gate) 
+                valid, proposal_circuit, proposal_symbols_to_values, prop_cirq_circuit = self.create_proposal_without_gate(info_gate)
                 if valid:
                     proposal_energy = self.give_energy(proposal_circuit, proposal_symbols_to_values)
 
