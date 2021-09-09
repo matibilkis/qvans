@@ -2,12 +2,12 @@
 <p align="center">
 
 
-  <h1 align="center">|VANs> </h3>
+  <h1 align="center">VANs </h3>
 
   <p align="center">
   <h2>A semi-agnostic ansatz with variable structure for quantum machine learning </h2>
     <br />
-    <a href="https://arxiv.org/abs/2103.06712"><strong>Check out ArXiv preprint »</strong></a>
+    <a href="https://arxiv.org/abs/2103.06712"><strong>Check out the ArXiv preprint »</strong></a>
     <br />
     <br />
    <!-- <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a> -->
@@ -136,6 +136,7 @@ and consequently run it:
   ```sh
   python3 meta_main.py
   ```
+Moreover, a series of <a href= https://github.com/matibilkis/qvans/tree/master/tutorials>tutorials</a> have been written in order to demonstrate how to use VANs.
 
 <!-- CONTRIBUTING -->
 ## Contributing
