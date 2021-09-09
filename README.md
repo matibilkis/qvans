@@ -6,14 +6,12 @@
 
   <p align="center">
   <h2>A semi-agnostic ansatz with variable structure for quantum machine learning </h2>
-    <br />
-    <a href="https://arxiv.org/abs/2103.06712"><strong>Check out the ArXiv preprint »</strong></a>
-    <br />
-    <br />
+
+
    <!-- <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a> -->
   </p>
 </p>
-<p> This repository contains a code implementation of the pre-print "A semi-agnostic ansatz with variable structure for quantum machine learning".</p>
+<p> This repository contains an implementation of <a href="https://arxiv.org/abs/2103.06712"><strong>A semi-agnostic ansatz with variable structure for quantum machine learning</strong></a>.</p>
 <!-- TABLE OF CONTENTS -->
 <details open="open">
   <summary>Table of Contents</summary>
