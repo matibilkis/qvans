@@ -1,5 +1,48 @@
 import numpy as np
 import cirq
+from datetime import datetime
+from functools import wraps
+import errno
+import os
+import signal
+from ast import literal_eval
+
+
+def overlap(st1, st2):
+    return np.dot(np.conjugate(st1), st2)
+
+def ket_bra(v1,v2):
+    """
+    Assuming v has shape (1,d)
+    """
+    return np.dot(v1.T,v2)
+
+def bra_ket(v1,v2):
+    """
+    Assuming v has shape (1,d)
+    """
+    return np.dot(v1,v2.T)
+
+def proj(v):
+    if len(v.shape) < 2:
+        v = np.expand_dims(v,axis=0)
+    P= ket_bra(v,v)
+    return P
+
+def normalize(a):
+    return np.array(a)/np.sqrt(np.sum(np.square(a)))
+
+
+
+def get_def_path():
+    import getpass
+    user = getpass.getuser()
+    if user == "cooper-cooper":
+        defpath = '../data-vans/'
+    else:
+        defpath = "/data/uab-giq/scratch/matias/data-vans/"
+    return defpath
+
 
 def dict_to_json(dictionary):
     d="{"
@@ -13,77 +56,40 @@ def dict_to_json(dictionary):
     return "\'"+d+ "\'"
 
 
-def scheduler_selector_temperature(energy, lowest_energy_found, when_on=10):
-    relative_energy = np.abs((energy - lowest_energy_found)/lowest_energy_found)
-    if relative_energy < 1e-1:
-       return 1#
-    else:
-       return when_on
+def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
+    def decorator(func):
+        def _handle_timeout(signum, frame):
+            print("hey")
+            np.seed(datetime.now().microsecond + datetime.now().second)
+            raise TimeoutError(error_message)
 
-def scheduler_parameter_perturbation_wall(its_without_improvig, max_randomness=.8, min_randomness=.1, decrease_to=20):
-    slope = (max_randomness-min_randomness)/decrease_to
-    return np.min([min_randomness + slope*its_without_improvig, max_randomness])
+        def wrapper(*args, **kwargs):
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.alarm(seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+            return result
+        return wraps(func)(wrapper)
+    return decorator
 
-def give_kronecker_of_list(lista):
-    #lista=[auto_handler.zero_proj(vqe_handler.qubits[k]).matrix() for k in range(3)]
-    m=[]
-    for ind,k in enumerate(lista):
-        if ind == 0:
-            m.append(k)
+
+
+def get_qubits_involved(circuit, circuit_db):
+    """
+    retrieves the qubits that are touched by a circuit
+    """
+    all_ops = list(circuit.all_operations())
+    ops_involved = [all_ops[k].qubits for k in range(len(all_ops))]
+    qubits_involved = []
+    for k in ops_involved:
+        if len(k) == 2: #cnot
+            for qq in [0,1]:
+                qinv = literal_eval(k[qq].__str__())[-1]
+                qubits_involved.append(qinv)
         else:
-            m.append(np.kron(m[-1],k))
-    return m[-1]
-
-
-def give_kr_prod(matrices):
-    #matrices list of 2 (or more in principle) matrices
-    while len(matrices) != 1:
-        sm, smf=[],[]
-        for ind in range(len(matrices)):
-            sm.append(matrices[ind])
-            if len(sm) == 2:
-                smf.append(np.kron(*sm))
-                sm=[]
-        matrices = smf
-    return matrices[0]
-
-# def compute_ground_energy(self):
-#     ground_energy = np.min(np.linalg.eigvals(sum(self.observable).matrix()))
-#     return ground_energy
-# def compute_ground_energy_1(obse,qubits):
-#     """
-#     TO do. Implement this for, say, 6 qubits (therer's a problem in give_kr_prod...)
-#     """
-#     ind_to_2 = {"0":np.eye(2), "1":cirq.unitary(cirq.X), "2":cirq.unitary(cirq.Y), "3":cirq.unitary(cirq.Z)}
-#     ham = np.zeros((2**len(qubits),2**len(qubits))).astype(np.complex128)
-#     for kham in obse:
-#         item= kham.dense(qubits)
-#         string = item.pauli_mask
-#         matrices = [ind_to_2[str(int(ok))] for ok in string]
-#         ham += give_kr_prod(matrices)*item.coefficient
-#     return np.sort(np.real(np.linalg.eigvals(ham)))
-
-# def compute_ground_energy(obse,qubits):
-#     """
-#     TO do. Implement this for, say, 6 qubits (therer's a problem in give_kr_prod...)
-#     """
-#     if -np.log2(len(qubits)).is_integer() is True:
-#         ind_to_2 = {"0":np.eye(2), "1":cirq.unitary(cirq.X), "2":cirq.unitary(cirq.Y), "3":cirq.unitary(cirq.Z)}
-#         ham = np.zeros((2**len(qubits),2**len(qubits))).astype(np.complex128)
-#         for kham in obse:
-#             item= kham.dense(qubits)
-#             string = item.pauli_mask
-#             matrices = [ind_to_2[str(int(ok))] for ok in string]
-#             ham += give_kr_prod(matrices)*item.coefficient
-#         return np.sort(np.real(np.linalg.eigvals(ham)))
-#     else:
-#         return [-np.inf]
-#
-
-    #
-    #     if  < 0.05:
-    #         return 0
-    #     else:
-    #         return
-    # else:
-    #     return
+            qinv = literal_eval(k[0].__str__())[-1]
+            qubits_involved.append(qinv)
+    qubits_involved = list(set(qubits_involved)) #this gives you the set ordered
+    return qubits_involved
