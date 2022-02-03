@@ -75,6 +75,15 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
     return decorator
 
 
+def reindex_symbol(list_of_symbols, first_symbol_number):
+    reindexed=[]
+    for ind, sym in enumerate(list_of_symbols):
+        if sym == [] or sym is None:
+            reindexed.append(None)
+        else:
+            reindexed.append("th_{}".format(int(sym.replace("th_",""))+first_symbol_number))
+    return reindexed
+
 
 def get_qubits_involved(circuit, circuit_db):
     """
@@ -93,3 +102,49 @@ def get_qubits_involved(circuit, circuit_db):
             qubits_involved.append(qinv)
     qubits_involved = list(set(qubits_involved)) #this gives you the set ordered
     return qubits_involved
+
+def gate_counter_on_qubits(translator, circuit_db):
+    """
+    Gives gate count for each qbit. First entry rotations, second CNOTS
+    """
+
+    ngates = {k:[0,0] for k in range(translator.n_qubits)}
+    for ind in circuit_db["ind"]:
+        if ind < translator.number_of_cnots:
+            control, target = translator.indexed_cnots[str(ind)]
+            ngates[control][1]+=1
+            ngates[target][1]+=1
+        else:
+            qind = (ind-translator.number_of_cnots)%translator.n_qubits
+            ngates[qind][0]+=1
+    return np.array(list(ngates.values()))
+
+
+
+
+def get_symbol_number_from(insertion_index, circuit_db):
+    ### check symbol number ###
+    symbol_found=False
+    for k in range(0, insertion_index+1)[::-1]:
+        if type(circuit_db.loc[k]["symbol"]) == str:
+            number_symbol = int(circuit_db.loc[k]["symbol"].replace("th_","")) +1
+            symbol_found=True
+            break
+    if not symbol_found:
+        number_symbol = 0
+    return number_symbol
+
+
+def shift_symbols(idinserter, indice, circuit_db):
+    """
+    indice is the place at which the gate was added.
+    """
+    for k in range(indice+2, circuit_db.shape[0]):
+        if circuit_db.loc[k]["ind"] < idinserter.number_of_cnots or type(circuit_db.loc[k]["symbol"]) != str:
+            pass
+        else:
+            old_value = circuit_db.iloc[k]["symbol"]
+            number_symbol = int(old_value.replace("th_","")) +1
+            new_value = "th_{}".format(number_symbol)
+            circuit_db.loc[k] = circuit_db.loc[k].replace(to_replace=old_value,value=new_value)
+    return circuit_db

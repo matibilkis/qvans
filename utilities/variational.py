@@ -20,7 +20,7 @@ class Minimizer:
             self.epochs = epochs
             self.patience = patience
             self.max_time_training = max_time_continuous
-            self.optimizer = tf.keras.optimizers.Adam(self.lr)
+            self.optimizer = tf.keras.optimizers.Adam(learning_rate = self.lr)
             self.parameter_noise = parameter_noise
             self.minimization_step=0 #used for tensorboard
 
@@ -40,6 +40,7 @@ class Minimizer:
                 self.target_preds = None ##this is to compute the cost
 
     def give_cost(self, batched_cicuits, resolver, model=None):
+        ### example: minimizer.give_cost(  [translator.give_circuit(circuit_db)[0]], resolver ) 
         if model is None:
             model = self.model_class(symbols = list(resolver.keys()), observable=self.observable, batch_sizes=len(batched_cicuits))
         tfqcircuit = tfq.convert_to_tensor([cirq.resolve_parameters(circuit,resolver) for circuit in batched_cicuits])
