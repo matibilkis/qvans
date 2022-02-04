@@ -4,40 +4,20 @@ import tensorflow_quantum as tfq
 import tensorflow as tf
 import  numpy as np
 
-def give_observable_vqe(minimizer, hamiltonian, params):
-    if hamiltonian.upper() == "TFIM":
-        check_params(params,2)
-        g, J = params
-        observable = [-float(g)*cirq.Z.on(q) for q in minimizer.qubits]
-        for q in range(len(minimizer.qubits)):
-            observable.append(-float(J)*cirq.X.on(minimizer.qubits[q])*cirq.X.on(minimizer.qubits[(q+1)%len(minimizer.qubits)]))
-        return observable
-    elif hamiltonian.upper() == "XXZ":
-        check_params(params,2)
-        g, J = params
-        observable = [float(g)*cirq.Z.on(q) for q in minimizer.qubits]
-        for q in range(len(minimizer.qubits)):
-            observable.append(cirq.X.on(minimizer.qubits[q])*cirq.X.on(minimizer.qubits[(q+1)%len(minimizer.qubits)]))
-            observable.append(cirq.Y.on(minimizer.qubits[q])*cirq.Y.on(minimizer.qubits[(q+1)%len(minimizer.qubits)]))
-            observable.append(float(J)*cirq.Z.on(minimizer.qubits[q])*cirq.Z.on(minimizer.qubits[(q+1)%len(minimizer.qubits)]))
-        return observable
-    elif hamiltonian.upper() == "Z":
-        return [cirq.Z.on(q) for q in minimizer.qubits]
-    else:
-        raise NotImplementedError("Hamiltonian not implemented yet")
+def give_observable_compiling(minimizer):
+    return [cirq.Z.on(q) for q in minimizer.qubits]
 
-def compute_lower_bound_cost_vqe(minimizer):
+def compute_lower_bound_cost_compiling(minimizer):
     print("computing ground state energy...")
-    return np.real(np.min(np.linalg.eigvals(sum(minimizer.observable).matrix())))
+    return 0.
 
-
-class QNN_VQE(tf.keras.Model):
+class QNN_Compiling(tf.keras.Model):
     def __init__(self, symbols, observable, batch_sizes=1):
         """
         symbols: symbolic variable [sympy.Symbol]*len(rotations_in_circuit)
         batch_size: how many circuits you feed the model at, at each call (this might )
         """
-        super(QNN_VQE,self).__init__()
+        super(QNN_Compiling,self).__init__()
         self.expectation_layer = tfq.layers.Expectation()
         self.symbols = symbols
         self.observable = tfq.convert_to_tensor([observable]*batch_sizes)
@@ -72,13 +52,14 @@ class QNN_VQE(tf.keras.Model):
     def metrics(self):
         return [self.cost_value, self.lr_value,self.gradient_norm]
 
-class EnergyLoss(tf.keras.losses.Loss):
-    def __init__(self, mode_var="vqe", **kwargs):
-        super(EnergyLoss,self).__init__()
+class CompilingLoss(tf.keras.losses.Loss):
+    def __init__(self, mode_var="compiling", **kwargs):
+        super(CompilingLoss,self).__init__()
         self.mode_var = mode_var
+        self.d = kwargs.get("d", 2) #dimension
 
     def call(self, y_true, y_pred):
-        return tf.math.reduce_sum(y_pred,axis=-1)
+        return 1.-tf.math.reduce_sum(y_pred,axis=-1)/self.d
 
 
 class Metrica(tf.keras.metrics.Metric):

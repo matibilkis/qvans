@@ -1,5 +1,5 @@
 import numpy as np
-from utilities.misc import get_qubits_involved, reindex_symbol, gate_counter_on_qubits, get_symbol_number_from, shift_symbols
+from utilities.misc import get_qubits_involved, reindex_symbol, gate_counter_on_qubits, get_symbol_number_from, shift_symbols_up
 from utilities.templates import gate_template
 
 class IdInserter:
@@ -116,5 +116,5 @@ class IdInserter:
                 m_circuit_db.loc[insertion_index+0.1 + mind] = gate_template(m_gate, param_value=2*np.pi*np.random.random()*self.noise_in_rotations,
                                                                             symbol="th_"+str(number_symbol_shifting), block_id=which_circuit_block)
                 m_circuit_db = m_circuit_db.sort_index().reset_index(drop=True)
-                m_circuit_db = shift_symbols(self, insertion_index + mind, m_circuit_db)
+                m_circuit_db = shift_symbols_up(self, insertion_index + mind, m_circuit_db)
         return m_circuit_db

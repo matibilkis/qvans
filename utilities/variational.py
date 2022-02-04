@@ -1,7 +1,8 @@
 import tensorflow as tf
-from utilities.vqe import *
 import numpy as np
 import time
+from utilities.compiling import *
+from utilities.vqe import *
 
 class Minimizer:
     def __init__(self,
@@ -27,20 +28,30 @@ class Minimizer:
             if mode.upper() == "VQE":
                 hamiltonian = kwargs.get("hamiltonian")
                 params = kwargs.get("params")
-                self.observable = give_observable(translator,hamiltonian, params)
+                self.observable = give_observable_vqe(translator,hamiltonian, params)
                 self.loss = EnergyLoss()
                 self.model_class = QNN_VQE
                 self.lower_bound_cost = compute_lower_bound_cost_vqe(self) ## this will only work
                 self.target_preds = None ##this is to compute the cost
 
-            elif mode.upper() == "discrimination":
+            elif mode.upper() == "DISCRIMINATION":
+
                 params = kwargs.get("params")
                 self.observable = [cirq.Z.on(q) for q in translator.qubits]
                 self.loss = Prob
                 self.target_preds = None ##this is to compute the cost
 
+            elif mode.upper() == "COMPILING":
+
+                self.observable = give_observable_compiling(translator)
+                self.loss = CompilingLoss(d = translator.n_qubits)
+                self.model_class = QNN_Compiling
+                self.lower_bound_cost = compute_lower_bound_cost_compiling(self) ## this will only work
+                self.target_preds = None ##this is to compute the cost
+
+
     def give_cost(self, batched_cicuits, resolver, model=None):
-        ### example: minimizer.give_cost(  [translator.give_circuit(circuit_db)[0]], resolver ) 
+        ### example: minimizer.give_cost(  [translator.give_circuit(circuit_db)[0]], resolver )
         if model is None:
             model = self.model_class(symbols = list(resolver.keys()), observable=self.observable, batch_sizes=len(batched_cicuits))
         tfqcircuit = tfq.convert_to_tensor([cirq.resolve_parameters(circuit,resolver) for circuit in batched_cicuits])
@@ -48,7 +59,7 @@ class Minimizer:
 
     def minimize(self, batched_circuits, symbols, parameter_values=None, parameter_perturbation_wall=1):
         """
-        batched_circuits:: list of cirq.Circuits (either resolved or with Sympy.Symbol)
+        batched_circuits:: list of cirq.Circuits (should NOT be resolved or with Sympy.Symbol)
         symbols:: list of strings containing symbols for each rotation
         parameter_values:: values of previously optimized parameters
         parameter_perturbation_wall:: with some probability move away from the previously optimized parameters (different initial condition)

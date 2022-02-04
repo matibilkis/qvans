@@ -26,7 +26,7 @@ class CirqTranslater:
         self.cgates = {0:cirq.rz, 1: cirq.rx, 2:cirq.ry}
 
 
-    def append_to_circuit(self, gate_id, circuit, circuit_db):
+    def append_to_circuit(self, gate_id, circuit, circuit_db, **kwargs):
         """
         adds gate_id instructions to current circuit. Returns new circuit (cirq object) and new circuit_db (pd.DataFrame)
 
@@ -34,6 +34,7 @@ class CirqTranslater:
         circuit: Cirq.Circuit object
         circuit_db: pandas DataFrame (all circuit info is appended to here)
         """
+        unresolved = kwargs.get("unresolved",False)
         ind = gate_id["ind"]
         gate_index = len(list(circuit_db.keys()))
         circuit_db[gate_index] = gate_id #this is the new item to add
@@ -41,8 +42,17 @@ class CirqTranslater:
         for j in [k["symbol"] for k in circuit_db.values()]:
             if j != None:
                 symbols.append(j)
+        ## custom gate
+        if ind == -1:
+            circuit_db[gate_index]["symbol"] = None
+            u=gate_id["param_value"]   ##param_value will be the unitary (np.array)
+            q=gate_id["qubits"] #list
+            qubits = circuit_db[gate_index]["qubits"]
+            uu = cirq.MatrixGate(u)
+            circuit.append(uu.on(*[self.qubits[qq] for qq in qubits]))
+            return circuit, circuit_db
         #### add CNOT
-        if ind < self.number_of_cnots:
+        elif 0 <= ind < self.number_of_cnots:
             control, target = self.indexed_cnots[str(ind)]
             circuit.append(cirq.CNOT.on(self.qubits[control], self.qubits[target]))
             circuit_db[gate_index]["symbol"] = None
@@ -68,19 +78,23 @@ class CirqTranslater:
                 symbol_name = "th_"+str(len(symbols))
                 circuit_db[gate_index]["symbol"] = symbol_name
 
-            if param_value is None:
+            if (param_value is None) or (unresolved is True):
                 param_value = sympy.Symbol(symbol_name)
             circuit.append(gate(param_value).on(self.qubits[qubit]))
             return circuit, circuit_db
 
         else:
-            raise AttributeError("Wrong index!")
+            raise AttributeError("Wrong index!", ind)
 
-    def give_circuit(self, dd):
+    def give_circuit(self, dd,**kwargs):
+        """
+        retrieves circuit from circuit_db. If unresolved is False, the circuit is retrieved with the values of rotations (not by default, since we feed this to a TFQ model)
+        """
+        unresolved = kwargs.get("unresolved",True)
         list_of_gate_ids = [gate_template(**dict(dd.iloc[k])) for k in range(len(dd))]
         circuit, circuit_db = [],{}
         for k in list_of_gate_ids:
-            circuit , circuit_db = self.append_to_circuit(k,circuit, circuit_db)
+            circuit , circuit_db = self.append_to_circuit(k,circuit, circuit_db, unresolved=unresolved)
         circuit = cirq.Circuit(circuit)
         circuit_db = pd.DataFrame.from_dict(circuit_db,orient="index")
         return circuit, circuit_db

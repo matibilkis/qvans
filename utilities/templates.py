@@ -4,11 +4,23 @@ import numpy as np
 
 def u2_db(translator,a,b,**kwargs):
     block_id = kwargs.get("block_id",0)
-    return pd.DataFrame([gate_template(k, block_id=block_id) for i,k in enumerate(u2(translator,a,b))])
+    params = kwargs.get("params",True)
+    def give_param(params, k):
+        if params is not True:
+            return None
+        else:
+            return np.random.normal(0,2*np.pi)
+    return pd.DataFrame([gate_template(k, block_id=block_id, param_value = give_param(params,k)) for i,k in enumerate(u2(translator,a,b))])
 
 def u1_db(translator,q,**kwargs):
     block_id = kwargs.get("block_id",0)
-    return pd.DataFrame([gate_template(k, block_id=block_id) for i,k in enumerate(u1(translator,q))])
+    params = kwargs.get("params",True)
+    def give_param(params, k):
+        if params is not True:
+            return None
+        else:
+            return np.random.normal(0,2*np.pi)
+    return pd.DataFrame([gate_template(k, block_id=block_id, param_value = give_param(params,k)) for i,k in enumerate(u1(translator,q))])
 
 def u2_layer(translator,**kwargs):
     block_id = kwargs.get("block_id",0)
@@ -61,6 +73,9 @@ def gate_template(ind,**kwargs):
     dicti["param_value"] = what_if_none(kwargs.get("param_value"),None)
     dicti["trainable"] = what_if_none(kwargs.get("trainable"),True)
     dicti["block_id"] = what_if_none(kwargs.get("block_id"), 0)
+    qubits = kwargs.get("qubits", None)
+    if qubits is not None:
+        dicti["qubits"] = qubits
     return dicti
 
 

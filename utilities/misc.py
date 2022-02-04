@@ -135,7 +135,7 @@ def get_symbol_number_from(insertion_index, circuit_db):
     return number_symbol
 
 
-def shift_symbols(idinserter, indice, circuit_db):
+def shift_symbols_up(idinserter, indice, circuit_db):
     """
     indice is the place at which the gate was added.
     """
@@ -143,8 +143,23 @@ def shift_symbols(idinserter, indice, circuit_db):
         if circuit_db.loc[k]["ind"] < idinserter.number_of_cnots or type(circuit_db.loc[k]["symbol"]) != str:
             pass
         else:
-            old_value = circuit_db.iloc[k]["symbol"]
+            old_value = circuit_db.loc[k]["symbol"]
             number_symbol = int(old_value.replace("th_","")) +1
+            new_value = "th_{}".format(number_symbol)
+            circuit_db.loc[k] = circuit_db.loc[k].replace(to_replace=old_value,value=new_value)
+    return circuit_db
+
+
+def shift_symbols_down(simplifier, indice, circuit_db):
+    """
+    indice is the place at which the gate was added.
+    """
+    for k in range(indice, circuit_db.shape[0]):
+        if circuit_db.loc[k]["ind"] < simplifier.number_of_cnots or type(circuit_db.loc[k]["symbol"]) != str:
+            pass
+        else:
+            old_value = circuit_db.loc[k]["symbol"]
+            number_symbol = int(old_value.replace("th_","")) -1
             new_value = "th_{}".format(number_symbol)
             circuit_db.loc[k] = circuit_db.loc[k].replace(to_replace=old_value,value=new_value)
     return circuit_db
