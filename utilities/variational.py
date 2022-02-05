@@ -48,7 +48,7 @@ class Minimizer:
                 self.model_class = QNN_Compiling
                 self.lower_bound_cost = compute_lower_bound_cost_compiling(self) ## this will only work
                 self.target_preds = None ##this is to compute the cost
-
+                self.patience = 50 #don't wait too much
 
     def give_cost(self, batched_cicuits, resolver, model=None):
         ### example: minimizer.give_cost(  [translator.give_circuit(circuit_db)[0]], resolver )

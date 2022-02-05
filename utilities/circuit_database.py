@@ -43,7 +43,7 @@ class CirqTranslater:
             if j != None:
                 symbols.append(j)
         ## custom gate
-        if ind == -1:
+        if ind == -1: ## warning, no support on TFQ for the moment...
             circuit_db[gate_index]["symbol"] = None
             u=gate_id["param_value"]   ##param_value will be the unitary (np.array)
             q=gate_id["qubits"] #list
@@ -79,7 +79,8 @@ class CirqTranslater:
                 circuit_db[gate_index]["symbol"] = symbol_name
 
             if (param_value is None) or (unresolved is True):
-                param_value = sympy.Symbol(symbol_name)
+                if gate_id["trainable"] == True: ##only leave unresolved those gates that will be trianed
+                    param_value = sympy.Symbol(symbol_name)
             circuit.append(gate(param_value).on(self.qubits[qubit]))
             return circuit, circuit_db
 
