@@ -14,6 +14,7 @@ class Minimizer:
                 patience=200,
                 max_time_continuous=120,
                 parameter_noise=0.01,
+                n_qubits = 2,
                 **kwargs):
 
             ## training hyperparameters
@@ -49,6 +50,7 @@ class Minimizer:
                 self.lower_bound_cost = compute_lower_bound_cost_compiling(self) ## this will only work
                 self.target_preds = None ##this is to compute the cost
                 self.patience = 50 #don't wait too much
+
 
     def give_cost(self, batched_cicuits, resolver, model=None):
         ### example: minimizer.give_cost(  [translator.give_circuit(circuit_db)[0]], resolver )

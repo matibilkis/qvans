@@ -15,8 +15,8 @@ def conjugate_db(translator, v_to_compile_db):
     conjugate_v_to_compile["trainable"] = False
     for ind, gate_id in conjugate_v_to_compile.iterrows():
         if translator.number_of_cnots <= gate_id["ind"] <= translator.number_of_cnots + 3*translator.n_qubits:
-            mcof = [-1,-1,1][(gate_id["ind"]-translator.number_of_cnots)//translator.n_qubits] ###this conjugates paulis  rz, rx, ry
-            conjugate_v_to_compile.loc[ind].replace(to_replace=gate_id["param_value"], value=gate_id["param_value"]*mcof)
+            #mcof = [-1,-1,1][(gate_id["ind"]-translator.number_of_cnots)//translator.n_qubits] ###this conjugates paulis  rz, rx, ry
+            conjugate_v_to_compile.loc[ind].replace(to_replace=gate_id["param_value"], value=gate_id["param_value"]*-1)
     return conjugate_v_to_compile
 
 def construct_compiling_circuit(translator, conjugate_v_to_compile_db):
@@ -25,9 +25,9 @@ def construct_compiling_circuit(translator, conjugate_v_to_compile_db):
 
     v_to_compile is a cirq.Circuit object (single-qubit for the moment)
     """
-    qubits = translator.qubits[:2]
-    systems = qubits[:int(len(qubits)/2)]
-    ancillas = qubits[int(len(qubits)/2):]
+    #qubits = translator.qubits[:2]
+    #systems = qubits[:int(len(qubits)/2)]
+    #ancillas = qubits[int(len(qubits)/2):]
 
     forward_bell = [translator.number_of_cnots + 3*translator.n_qubits + i for i in range(int(translator.n_qubits/2))]
     forward_bell += [translator.cnots_index[str([k, k+int(translator.n_qubits/2)])] for k in range(int(translator.n_qubits/2))]
