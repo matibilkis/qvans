@@ -12,14 +12,14 @@ def conjugate_db(translator, v_to_compile_db):
     conjugate pauli rotations and set trainable to False
     """
     conjugate_v_to_compile = v_to_compile_db.copy()
-    conjugate_v_to_compile["trainable"] = False
+    conjugate_v_to_compile["trainable"] = True
     for ind, gate_id in conjugate_v_to_compile.iterrows():
         if translator.number_of_cnots <= gate_id["ind"] <= translator.number_of_cnots + 3*translator.n_qubits:
-            #mcof = [-1,-1,1][(gate_id["ind"]-translator.number_of_cnots)//translator.n_qubits] ###this conjugates paulis  rz, rx, ry
+            mcof = [-1,-1,1][(gate_id["ind"]-translator.number_of_cnots)//translator.n_qubits] ###this conjugates paulis  rz, rx, ry
             conjugate_v_to_compile.loc[ind].replace(to_replace=gate_id["param_value"], value=gate_id["param_value"]*-1)
     return conjugate_v_to_compile
 
-def construct_compiling_circuit(translator, conjugate_v_to_compile_db):
+def construct_compiling_circuit(translator, target_u_db):
     """
     compiling single-qubit unitary (for the moment)
 
@@ -32,10 +32,13 @@ def construct_compiling_circuit(translator, conjugate_v_to_compile_db):
     forward_bell = [translator.number_of_cnots + 3*translator.n_qubits + i for i in range(int(translator.n_qubits/2))]
     forward_bell += [translator.cnots_index[str([k, k+int(translator.n_qubits/2)])] for k in range(int(translator.n_qubits/2))]
     bell_db = pd.DataFrame([gate_template(k, param_value=None, trainable=False) for k in forward_bell])
-    u1s = u1_db(translator, 0, params=True)
+
+    u1s = u1_db(translator, 1, params=True)
+    target_u_db["trainable"] = False
     #target_unitary_db = pd.DataFrame([gate_template(ind=-1, param_value = np.conjugate(v_to_compile), trainable=False, qubits=[1])])
+
     backward_bell_db = bell_db[::-1]
-    id_comp = concatenate_dbs([bell_db, u1s, conjugate_v_to_compile_db, backward_bell_db])
+    id_comp = concatenate_dbs([bell_db,target_u_db, u1s, backward_bell_db])
     comp_circ, comp_db = translator.give_circuit(id_comp, unresolved=True)
     return comp_circ, comp_db
 
