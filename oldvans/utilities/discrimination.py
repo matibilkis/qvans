@@ -51,11 +51,6 @@ class QNN_DISCRIMINATION(tf.keras.Model):
 
 
 
-
-
-
-
-
 class PerrLoss(tf.keras.losses.Loss):
     """
     discard_qubits:::  qubits where you don't measure
@@ -69,7 +64,7 @@ class PerrLoss(tf.keras.losses.Loss):
         ### outcomes without environment (measurements are local thus you just environemnt ones)
         outs=[]
         for k in range(y_pred.shape[1]):
-            if k not in self.self.discard_qubits:
+            if k not in self.discard_qubits:
                 outs.append(y_pred[:,k])
         outcomes_env_discarded = tf.stack(outs, axis=1)
 

@@ -115,3 +115,47 @@ def u2(translator, q0, q1):
     for u in u1(translator, q1):
         l.append(u)
     return l
+
+
+### channels
+
+
+
+def amplitude_damping_db(translator, qubits_ind, eta, block_id=1, entire_circuit=False):
+    """
+    qubits_ind: list of indices of the qubits ---> [system, ancilla]
+    block_id: number that VANs uses to identify the channel and not touch it.
+    eta: damping strength (note that the rotation is twice the value!)
+    """
+    channel = []
+    if not hasattr(translator, "env_qubits"):
+        raise AttributeError("please specify environment qubits, just ot keep track of things. For instance, this is used in the minimizer")#translator.env_qubits = []
+    if qubits_ind[1] not in translator.env_qubits:
+        raise AttributeError("please check your env qubits & order in which qubits this template are called for, otherwise things can mess up.")
+    if block_id not in translator.untouchable_blocks:
+        raise AttributeError("please check your untouchable_blocks.")
+
+    ## controlled-Ry(2*eta)
+    ### H on each qubit
+    for qindex in qubits_ind: ##list on qubits suffering from the channel
+        channel.append( translator.number_of_cnots + 3*translator.n_qubits + qindex )
+    ###CNOT[q1,q0]
+    channel.append(translator.cnots_index[str(qubits_ind[::-1])])
+    ###Ry(eta)(q1)
+    channel.append(translator.number_of_cnots + 2*translator.n_qubits + qubits_ind[1] )
+    ###CNOT[q1,q0]
+    channel.append(translator.cnots_index[str(qubits_ind[::-1])])
+    ### H on eahc qubit
+    for qindex in qubits_ind:
+        channel.append( translator.number_of_cnots + 3*translator.n_qubits + qindex )
+    ### Ry(2*eta)(q1)
+    channel.append(translator.number_of_cnots + 2*translator.n_qubits + qubits_ind[1] )
+
+
+    ## CNOT[q1,q0]
+    channel.append(translator.cnots_index[str(qubits_ind[::-1])])
+
+    index_eta = translator.number_of_cnots + 2*translator.n_qubits + qubits_ind[1]
+    give_value_eta = lambda x, eta_value: None if x!= index_eta else eta_value
+    is_rotation = lambda x: True if translator.number_of_cnots<=x<translator.number_of_cnots+(3*translator.n_qubits) else None
+    return [gate_template(gate_id, block_id=block_id, trainable=False, param_value=give_value_eta(gate_id, eta), channel_param=is_rotation(gate_id)) for gate_id in channel]

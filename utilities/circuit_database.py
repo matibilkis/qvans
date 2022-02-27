@@ -5,12 +5,17 @@ from utilities.templates import gate_template
 import sympy
 
 class CirqTranslater:
-    def __init__(self, n_qubits):
+    def __init__(self, n_qubits, **kwargs):
         """
         class that translates database to cirq circuits
         """
         self.n_qubits = n_qubits
         self.qubits = cirq.GridQubit.rect(1, n_qubits)
+
+        ### blocks that are fixed-structure (i.e. channels, state_preparation, etc.)
+        untouchable_blocks = kwargs.get("untouchable_blocks",[])
+        self.untouchable_blocks = untouchable_blocks
+
 
         #### keep a register on which integers corresponds to which CNOTS, target or control.
         self.indexed_cnots = {}
