@@ -36,6 +36,16 @@ def u1_layer(translator, **kwargs):
         dd = concatenate_dbs([dd,u1_db(translator,i, block_id=block_id)])
     return dd
 
+def x_layer_db(translator, **kwargs):
+    block_id = kwargs.get("block_id",0)
+    xx = pd.DataFrame([gate_template(k, param_value=0.,block_id=block_id) for k in [translator.number_of_cnots + translator.n_qubits+j for j in range(translator.n_qubits)]])
+    return xx
+
+def z_layer_db(translator,**kwargs):
+    block_id = kwargs.get("block_id",0)
+    zz = pd.DataFrame([gate_template(k, param_value=0., block_id=block_id) for k in [translator.number_of_cnots +j for j in range(translator.n_qubits)]])
+    return zz
+
 def cnot_layer(translator, **kwargs):
     touching = kwargs.get("touching",False)
     block_id = kwargs.get("block_id",0)

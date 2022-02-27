@@ -163,3 +163,10 @@ def shift_symbols_down(simplifier, indice, circuit_db):
             new_value = "th_{}".format(number_symbol)
             circuit_db.loc[k] = circuit_db.loc[k].replace(to_replace=old_value,value=new_value)
     return circuit_db
+
+
+def type_get(x, translator):
+    return (x-translator.number_of_cnots)//translator.n_qubits
+
+def check_rot(ind_gate, translator):
+    return translator.number_of_cnots<= ind_gate <(3*translator.n_qubits + translator.number_of_cnots)
