@@ -106,9 +106,13 @@ class CirqTranslater:
         return circuit, circuit_db
 
 
-    def get_symbols(self, circuit_db):
+    def get_trainable_symbols(self, circuit_db):
         trainable_symbols = circuit_db[circuit_db["trainable"] == True]["symbol"]
         return list(trainable_symbols[circuit_db["symbol"].notnull()])
+
+    def get_trainable_params_value(self,circuit_db):
+        index_trainable_params = circuit_db[circuit_db["trainable"] == True]["symbol"].dropna().index
+        return circuit_db["param_value"][index_trainable_params]
 
 
     def give_trainable_parameters(self, circuit_db):
@@ -126,6 +130,13 @@ class CirqTranslater:
         circuit_db (unoptimized) pd.DataFrame
         symbol_to_value: resolver, dict
         """
-        symbol_db = circuit_db.loc[circuit_db["symbol"].isin(list(symbol_to_value))]["symbol"]
-        circuit_db["param_value"].update({ind:val for ind,val in zip(symbol_db.index, symbol_to_value.values())})
+        trianables = circuit_db[circuit_db["trainable"] == True]
+        trainable_symbols = trianables[~trianables["symbol"].isna()]
+        circuit_db["param_value"].update({ind:val for ind, val in zip(trainable_symbols.index, symbol_to_value.values())})
         return circuit_db
+
+
+    def give_resolver(self, circuit_db):
+        trianables = circuit_db[circuit_db["trainable"] == True]
+        trainable_symbols = trianables[~trianables["symbol"].isna()]
+        return dict(trainable_symbols[["symbol","param_value"]].values)

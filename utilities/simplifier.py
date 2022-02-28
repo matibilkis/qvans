@@ -29,7 +29,7 @@ class Simplifier:
         self.absolute_rules = [self.rule_2, self.rule_4,  self.rule_5, self.rule_6]# this are rules that should be applied to any block ,regardless of its position ..
         self.relative_rules = [self.rule_1, self.rule_3] ##rule 1 and 3 are not always applied since the incoming state is likely not |0> for general block_id's. (suppose you have a channel...)
         self.loop_the_rules = 1 ### one could think on looping more than ones the rule
-        self.apply_relatives_to_first = True
+        self.apply_relatives_to_first = False
         self.untouchable = untouchable ### for instance, channel blocks...
 
     def reduce_circuit(self, circuit_db):

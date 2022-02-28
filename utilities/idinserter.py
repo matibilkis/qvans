@@ -11,6 +11,8 @@ class IdInserter:
 
         self.n_qubits = n_qubits
         self.spread_CNOTs = spread_CNOTs
+        if isinstance(untouchable_blocks, int):
+            untouchable_blocks = [untouchable_blocks]
         self.untouchable_blocks = untouchable_blocks
         self.choose_qubit_Temperature = choose_qubit_Temperature
         self.noise_in_rotations = noise_in_rotations
@@ -81,7 +83,7 @@ class IdInserter:
             prob_rot_cnot = [.5,.5]
 
         #### CHOOSE BLOCK #### 0--> rotation, 1 ---> CNOT
-        which_block = np.random.choice([0,1], p=which_prob(qubits_not_CNOT))
+        which_block = np.random.choice([0,1], p=prob_rot_cnot)#$which_prob(qubits_not_CNOT))
 
         if which_block == 0:
             gc=ngates[:,0]+1 #### gives the gate population for each qubit

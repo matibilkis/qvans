@@ -2,6 +2,11 @@ import pandas as pd
 import numpy as np
 
 
+
+"""
+To do: find a better name for channel_param as default for loading channel params (since you might also have some other stuff...)
+"""
+
 def u2_db(translator,a,b,**kwargs):
     block_id = kwargs.get("block_id",0)
     params = kwargs.get("params",True)
@@ -83,9 +88,14 @@ def gate_template(ind,**kwargs):
     dicti["param_value"] = what_if_none(kwargs.get("param_value"),None)
     dicti["trainable"] = what_if_none(kwargs.get("trainable"),True)
     dicti["block_id"] = what_if_none(kwargs.get("block_id"), 0)
+
     qubits = kwargs.get("qubits", None)
     if qubits is not None:
         dicti["qubits"] = qubits
+
+    channel_param = kwargs.get("channel_param", False)
+    if (channel_param is True):
+        dicti["channel_param"] = True
     return dicti
 
 
@@ -118,9 +128,6 @@ def u2(translator, q0, q1):
 
 
 ### channels
-
-
-
 def amplitude_damping_db(translator, qubits_ind, eta, block_id=1, entire_circuit=False):
     """
     qubits_ind: list of indices of the qubits ---> [system, ancilla]
@@ -158,4 +165,5 @@ def amplitude_damping_db(translator, qubits_ind, eta, block_id=1, entire_circuit
     index_eta = translator.number_of_cnots + 2*translator.n_qubits + qubits_ind[1]
     give_value_eta = lambda x, eta_value: None if x!= index_eta else eta_value
     is_rotation = lambda x: True if translator.number_of_cnots<=x<translator.number_of_cnots+(3*translator.n_qubits) else None
-    return [gate_template(gate_id, block_id=block_id, trainable=False, param_value=give_value_eta(gate_id, eta), channel_param=is_rotation(gate_id)) for gate_id in channel]
+
+    return pd.DataFrame([gate_template(gate_id, block_id=block_id, trainable=False, param_value=give_value_eta(gate_id, eta), channel_param=is_rotation(gate_id)) for gate_id in channel])

@@ -3,7 +3,7 @@ import numpy as np
 import time
 from utilities.compiling import *
 from utilities.vqe import *
-
+from utilities.discrimination import *
 class Minimizer:
     def __init__(self,
                 translator,
@@ -38,8 +38,10 @@ class Minimizer:
             elif mode.upper() == "DISCRIMINATION":
 
                 params = kwargs.get("params")
+                number_hyp = kwargs.get("number_hyp",2)
                 self.observable = [cirq.Z.on(q) for q in translator.qubits]
-                self.loss = Prob
+                self.loss = PerrLoss(discard_qubits=translator.env_qubits, number_hyp = number_hyp)
+                self.model_class = QNN_DISCRIMINATION
                 self.target_preds = None ##this is to compute the cost
 
             elif mode.upper() == "COMPILING":
@@ -51,13 +53,20 @@ class Minimizer:
                 self.target_preds = None ##this is to compute the cost
                 self.patience = 50 #don't wait too much
 
+    def give_cost_external_model(self, batched_circuit, model):
+        return self.loss(*[model(batched_circuit)]*2) ###useful for unitary killer
 
-    def give_cost(self, batched_cicuits, resolver, model=None):
+
+    def give_cost(self, batched_cicuits, model=None):
         ### example: minimizer.give_cost(  [translator.give_circuit(circuit_db)[0]], resolver )
-        if model is None:
-            model = self.model_class(symbols = list(resolver.keys()), observable=self.observable, batch_sizes=len(batched_cicuits))
-        tfqcircuit = tfq.convert_to_tensor([cirq.resolve_parameters(circuit,resolver) for circuit in batched_cicuits])
-        return self.loss(self.target_preds, model(tfqcircuit))  #y_target y_pred
+        if hasattr(self,"model"):
+            return self.loss(*[self.model(batched_cicuits)]*2)
+        else:
+            #if model is None:
+            raise AttributeError("give me a model!")
+    #        else:
+#                return self.loss(*[model(batched_cicuits)]*2) ###useful for unitary killer
+
 
     def minimize(self, batched_circuits, symbols, parameter_values=None, parameter_perturbation_wall=1):
         """
@@ -75,7 +84,7 @@ class Minimizer:
 
         #in case we have already travelled the parameter space,
         if parameter_values is not None:
-            self.model.trainable_variables[0].assign(tf.convert_to_tensor(np.array(list(parameter_values.values())).astype(np.float32)))
+            self.model.trainable_variables[0].assign(tf.convert_to_tensor(parameter_values.astype(np.float32)))
         else:
             self.model.trainable_variables[0].assign(tf.convert_to_tensor(np.pi*4*np.random.randn(len(symbols)).astype(np.float32)))
 
