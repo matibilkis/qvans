@@ -36,8 +36,11 @@ def u2_layer(translator,**kwargs):
 
 def u1_layer(translator, **kwargs):
     block_id = kwargs.get("block_id",0)
-    dd = u1_db(translator,0)
-    for i in range(1,translator.n_qubits):
+    qubits_ind = kwargs.get("qubits_ind",None)
+    if qubits_ind is None:
+        qubits_ind = list(range(translator.n_qubits))
+    dd = u1_db(translator,qubits_ind[0])
+    for i in qubits_ind[1:]:
         dd = concatenate_dbs([dd,u1_db(translator,i, block_id=block_id)])
     return dd
 

@@ -3,13 +3,20 @@ from utilities.misc import get_qubits_involved, reindex_symbol, gate_counter_on_
 from utilities.templates import gate_template
 
 class IdInserter:
-    def __init__(self, n_qubits,
-                 spread_CNOTs=False,
-                 choose_qubit_Temperature = 0.,
-                 untouchable_blocks = [None],
-                 noise_in_rotations=1e-2):
+    def __init__(self,
+                n_qubits,
+                spread_CNOTs=False,
+                choose_qubit_Temperature = 0.,
+                untouchable_blocks = [None],
+                untouchable_qubits = [],
+                noise_in_rotations=1e-2):
 
         self.n_qubits = n_qubits
+        self.touchable_qubits = list(range(n_qubits))
+        
+        for q in untouchable_qubits:
+            self.touchable_qubits.remove(q)
+
         self.spread_CNOTs = spread_CNOTs
         if isinstance(untouchable_blocks, int):
             untouchable_blocks = [untouchable_blocks]
@@ -88,11 +95,11 @@ class IdInserter:
         if which_block == 0:
             gc=ngates[:,0]+1 #### gives the gate population for each qubit
             probs=np.exp(self.choose_qubit_Temperature*(1-gc/np.sum(gc)))/np.sum(np.exp(self.choose_qubit_Temperature*(1-gc/np.sum(gc))))
-            qubits= np.random.choice(range(self.n_qubits),1,p=probs)
+            qubits= np.random.choice(self.touchable_qubits,1,p=probs)
         else:
             gc=ngates[:,1]+1 #### gives the gate population for each qubit
             probs=np.exp(self.choose_qubit_Temperature*(1-gc/np.sum(gc)))/np.sum(np.exp(self.choose_qubit_Temperature*(1-gc/np.sum(gc))))
-            qubits = np.random.choice(range(self.n_qubits),2,p=probs,replace=False)
+            qubits = np.random.choice(self.touchable_qubits,2,p=probs,replace=False)
 
         ### this gives the list of gates to insert
         block_of_gates = [self.resolution_1qubit, self.resolution_2cnots][which_block](qubits)

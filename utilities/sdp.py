@@ -1,5 +1,7 @@
 import cvxpy as cp
 from utilities.misc import ket_bra
+import numpy as np
+
 
 def give_choi(eta, bas):
     """
@@ -31,8 +33,8 @@ def psuc_ea(chois):
     return cost
 
 def sdp_channel_disc(etas):
-    print("computing SDP...")
+    #print("computing SDP...")
     b2 = [np.expand_dims(np.eye(2)[k],axis=0) for k in range(2)]
     basis = [ket_bra(b2[i], b2[j]) for i in range(2) for j in range(2)]
     chois = [give_choi(g, basis) for g in etas]
-    return psuc_ea(chois)
+    return psuc_ea(chois) ##error prob actually

@@ -4,6 +4,7 @@ import time
 from utilities.compiling import *
 from utilities.vqe import *
 from utilities.discrimination import *
+
 class Minimizer:
     def __init__(self,
                 translator,
@@ -37,11 +38,13 @@ class Minimizer:
 
             elif mode.upper() == "DISCRIMINATION":
 
-                params = kwargs.get("params")
+                params = kwargs.get("params",[0.01,1.])
                 number_hyp = kwargs.get("number_hyp",2)
                 self.observable = [cirq.Z.on(q) for q in translator.qubits]
                 self.loss = PerrLoss(discard_qubits=translator.env_qubits, number_hyp = number_hyp)
                 self.model_class = QNN_DISCRIMINATION
+                self.lower_bound_cost = compute_lower_bound_discrimination(params) 
+
                 self.target_preds = None ##this is to compute the cost
 
             elif mode.upper() == "COMPILING":

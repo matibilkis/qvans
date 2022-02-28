@@ -34,6 +34,8 @@ def prepare_optimization_discrimination(translator, circuit_db, ets):
     trainable_params_value = translator.get_trainable_params_value(circuit_db)
     return batch_circuits, trainable_symbols, trainable_params_value
 
+def compute_lower_bound_discrimination(params):
+    return sdp_channel_disc(params)
 
 
 

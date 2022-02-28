@@ -1,11 +1,11 @@
 import pickle
-from utilities.circuit_basics import Basic
+from utilities.circuit_database import CirqTranslater
 import numpy as np
 import os
 from datetime import datetime
 from utilities.misc import get_def_path
 
-class Evaluator(Basic):
+class Evaluator(CirqTranslater):
     def __init__(self, args,
                 acceptance_percentage = 0.01,
                 acceptance_reduction_rate = 10,
