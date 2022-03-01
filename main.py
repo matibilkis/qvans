@@ -22,7 +22,7 @@ simplifier = Simplifier(translator)
 
 etas = [0.01, 1.]
 minimizer = Minimizer(translator, mode="discrimination", params=etas)
-killer = GateKiller(translator, mode="discrimination")
+killer = GateKiller(translator, mode="discrimination", params=etas)
 inserter = IdInserter(translator.n_qubits, untouchable_blocks=translator.channel_id)
 
 args_evaluator = {"n_qubits":translator.n_qubits, "problem":"acd","params":etas}

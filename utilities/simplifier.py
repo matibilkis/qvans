@@ -273,7 +273,7 @@ class Simplifier:
                             compile_circuit, compile_circuit_db = construct_compiling_circuit(self.translator_, u_to_compile_db)
                             minimizer = Minimizer(self.translator_, mode="compiling", hamiltonian="Z")
 
-                            cost, resolver, history = minimizer.minimize([compile_circuit], symbols=self.translator.get_symbols(compile_circuit_db))
+                            cost, resolver, history = minimizer.minimize([compile_circuit], symbols=self.translator.get_trainable_symbols(compile_circuit_db))
 
                             OneQbit_translator = CirqTranslater(n_qubits=1)
                             u1s = u1_db(OneQbit_translator, 0, params=True)
@@ -364,7 +364,7 @@ class Simplifier:
                                                 simplification = True
                                                 break
                 if simplification == True:
-                    if len(on_qubit_order[q][order_gate_on_qubit]) <2:
+                    if len(on_qubit_order[q]) <2:
                         simplification=False
                     else:
                         info_rot = simplified_db.loc[on_qubit_order[q][order_gate_on_qubit]].copy()

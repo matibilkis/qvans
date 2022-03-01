@@ -2,7 +2,7 @@ import numpy as np
 from utilities.compiling import *
 from utilities.vqe import *
 from utilities.discrimination import *
-from utilities.misc import shift_symbols_down
+from utilities.misc import shift_symbols_down, qubit_get, get_qubits_involved
 
 class GateKiller:
     def __init__(self,
@@ -11,6 +11,7 @@ class GateKiller:
                 **kwargs):
         """
         To do: extend this to the other problems..
+                if not many gates on a certain block on a certain qubit, i dismiss. I could change it so it gets replaced by rot(0) - if prescindible.
         """
         self.translator = translator
         self.max_relative_increment = kwargs.get("max_relative_increment", 0.05)
@@ -36,6 +37,30 @@ class GateKiller:
             self.loss = CompilingLoss(d = self.translator.n_qubits)
             self.model_class = QNN_Compiling
 
+
+    def get_positional_dbs(self, circuit_db):
+        """
+        this is here to check whether to leave block without gates or not
+        """
+        circuit, circuit_db = self.translator.give_circuit(circuit_db)
+        qubits_involved = get_qubits_involved(circuit, circuit_db)
+
+        gates_on_qubit = {q:[] for q in qubits_involved}
+        on_qubit_order = {q:[] for q in qubits_involved}
+
+        for order_gate, ind_gate in enumerate( circuit_db["ind"]):
+            if ind_gate < self.translator.number_of_cnots:
+                control, target = self.translator.indexed_cnots[str(ind_gate)]
+                gates_on_qubit[control].append(ind_gate)
+                gates_on_qubit[target].append(ind_gate)
+                on_qubit_order[control].append(order_gate)
+                on_qubit_order[target].append(order_gate)
+            else:
+                gates_on_qubit[(ind_gate-self.translator.n_qubits)%self.translator.n_qubits].append(ind_gate)
+                on_qubit_order[(ind_gate-self.translator.n_qubits)%self.translator.n_qubits].append(order_gate)
+        return gates_on_qubit, on_qubit_order
+
+
     def give_cost_external_model(self, batched_circuit, model):
         return self.loss(*[model(batched_circuit)]*2) ###useful for unitary killer
 
@@ -56,13 +81,21 @@ class GateKiller:
         for b in self.translator.untouchable_blocks:
             blocks.remove(b)
 
+
         candidates = []
         for b in blocks:
             block_db = circuit_db[circuit_db["block_id"] == b]
             block_db_trainable = block_db[block_db["trainable"] == True]
             block_db_trainable = block_db_trainable[~block_db_trainable["symbol"].isna()]
             block_db_trainable = block_db_trainable[~block_db_trainable["symbol"].isna()]
-            candidates += list(block_db_trainable.index)
+            all_candidates = list(block_db_trainable.index)
+
+            ### check if the circuit is too short... (another possibility is to replace this guy by an rz(0)
+            gates_on_qubit, on_qubit_order = self.get_positional_dbs(block_db_trainable)
+            for kg in all_candidates:
+                qubit_affected = qubit_get(block_db_trainable.loc[kg]["ind"], self.translator)
+                if len(gates_on_qubit[qubit_affected]) >= 2:
+                    candidates.append(kg)
 
         killed_costs = []
 
@@ -87,8 +120,10 @@ class GateKiller:
 
         relative_increments = (np.array(killed_costs)-initial_cost)/np.abs(initial_cost)
         if np.min(relative_increments) < self.max_relative_increment:
-            index_to_kill = np.argmin(relative_increments)
-            new_cost = killed_costs[index_to_kill]
+            pos_min = np.argmin(relative_increments)
+            index_to_kill = candidates[pos_min]
+            new_cost = killed_costs[pos_min]
+
             killed_circuit_db = circuit_db.copy()
             killed_circuit_db = killed_circuit_db.drop(labels=[index_to_kill])
             killed_circuit_db = shift_symbols_down(self.translator, index_to_kill+1, killed_circuit_db)
