@@ -63,6 +63,8 @@ class Simplifier:
         simplified_db = original_circuit_db.copy()
         while simplified and cnt < self.max_cnt:
             simplified, simplified_circuit_db = rule(simplified_db, on_qubit_order, gates_on_qubit)
+            if simplified is True:
+                print(rule)
             circuit, simplified_db = self.translator.give_circuit(simplified_circuit_db)
             gates_on_qubit, on_qubit_order = self.get_positional_dbs(circuit, simplified_db)
             cnt+=1
@@ -332,7 +334,9 @@ class Simplifier:
             for order_gate_on_qubit, ind_gate in enumerate(qubit_gates_path[:-1]):
                 if simplification is True:
                     break
+
                 ind_gate_p1 = qubit_gates_path[order_gate_on_qubit+1]
+                print(ind_gate_p1, qubit_gates_path, order_gate_on_qubit)
 
                 if (check_rot(ind_gate, self.translator) == True) and (check_rot(ind_gate_p1, self.translator) == False):
                     type_0 = type_get(ind_gate, self.translator)

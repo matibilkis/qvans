@@ -126,8 +126,8 @@ class GateKiller:
 
             killed_circuit_db = circuit_db.copy()
             killed_circuit_db = killed_circuit_db.drop(labels=[index_to_kill])
-            killed_circuit_db = shift_symbols_down(self.translator, index_to_kill+1, killed_circuit_db)
             killed_circuit_db = killed_circuit_db.sort_index().reset_index(drop=True)
+            killed_circuit_db = shift_symbols_down(self.translator, index_to_kill, killed_circuit_db)
             return killed_circuit_db, new_cost, True
         else:
             return circuit_db, initial_cost, False
