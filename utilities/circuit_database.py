@@ -43,8 +43,10 @@ class CirqTranslater:
         ind = gate_id["ind"]
         gate_index = len(list(circuit_db.keys()))
         circuit_db[gate_index] = gate_id #this is the new item to add
+
+        ## the symbols are all elements we added but the very last one (added on the very previous line)
         symbols = []
-        for j in [k["symbol"] for k in circuit_db.values()]:
+        for j in [k["symbol"] for k in circuit_db.values()][:-1]:
             if j != None:
                 symbols.append(j)
         ## custom gate
@@ -83,6 +85,9 @@ class CirqTranslater:
                 symbol_name = "th_"+str(len(symbols))
                 circuit_db[gate_index]["symbol"] = symbol_name
 
+            else:
+                if symbol_name in symbols:
+                    print("warning, repeated symbol while constructing the circuit, see circuut_\n  symbol_name {}\n symbols {}\ncircuit_db {} \n\n\n".format(symbol_name, symbols, circuit_db))
             if (param_value is None) or (unresolved is True):
                 if gate_id["trainable"] == True: ##only leave unresolved those gates that will be trianed
                     param_value = sympy.Symbol(symbol_name)
@@ -94,7 +99,8 @@ class CirqTranslater:
 
     def give_circuit(self, dd,**kwargs):
         """
-        retrieves circuit from circuit_db. If unresolved is False, the circuit is retrieved with the values of rotations (not by default, since we feed this to a TFQ model)
+        retrieves circuit from circuit_db. It is assumed that the order in which the symbols are labeled corresponds to order in which their gates are applied in the circuit.
+        If unresolved is False, the circuit is retrieved with the values of rotations (not by default, since we feed this to a TFQ model)
         """
         unresolved = kwargs.get("unresolved",True)
         list_of_gate_ids = [gate_template(**dict(dd.iloc[k])) for k in range(len(dd))]
@@ -103,6 +109,7 @@ class CirqTranslater:
             circuit , circuit_db = self.append_to_circuit(k,circuit, circuit_db, unresolved=unresolved)
         circuit = cirq.Circuit(circuit)
         circuit_db = pd.DataFrame.from_dict(circuit_db,orient="index")
+        #### we make sure that the symbols appearing correspond to the ordering in which we add the gate to the circuit
         return circuit, circuit_db
 
 
@@ -134,7 +141,6 @@ class CirqTranslater:
         trainable_symbols = trianables[~trianables["symbol"].isna()]
         circuit_db["param_value"].update({ind:val for ind, val in zip(trainable_symbols.index, symbol_to_value.values())})
         return circuit_db
-
 
     def give_resolver(self, circuit_db):
         trianables = circuit_db[circuit_db["trainable"] == True]

@@ -165,6 +165,28 @@ def shift_symbols_down(simplifier, indice, circuit_db):
     return circuit_db
 
 
+def sort_by_symbol(circuit_db):
+    """
+    this guy takes a pandas database and 
+    """
+    circuit_nan_symbol = circuit_db[circuit_db["symbol"].isna()]
+    shift_ind = pd.Float64Index(list(np.array(list(circuit_nan_symbol.index)) - 0.5))
+    circuit_nan_symbol.index = shift_ind
+
+    give_int = lambda x: int(x.replace("th_",""))
+
+    circuit_db_symbols_0 = circuit_db.loc[(circuit_db["symbol"].dropna()).index]
+    circuit_db_symbols_0["symbol_int"] = circuit_db_symbols_0["symbol"].apply(give_int)
+    circuit_db_symbols_0 = circuit_db_symbols_0.sort_values("symbol_int")
+    circuit_db_symbols_sorted = circuit_db_symbols_0.drop(columns=["symbol_int"])
+    circuit_db_symbols_sorted.index = pd.Float64Index(list(np.sort(list(circuit_db_symbols_sorted.index))))
+
+
+    ddd = pd.concat([circuit_nan_symbol, circuit_db_symbols_sorted], ignore_index=False, axis=0)
+    ddd = ddd.sort_index()
+    ddd = ddd.reset_index(drop=True)
+    return ddd
+
 def type_get(x, translator):
     return (x-translator.number_of_cnots)//translator.n_qubits
 
