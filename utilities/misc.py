@@ -6,7 +6,7 @@ import errno
 import os
 import signal
 from ast import literal_eval
-
+import pandas as pd
 
 def overlap(st1, st2):
     return np.dot(np.conjugate(st1), st2)
@@ -165,33 +165,34 @@ def shift_symbols_down(simplifier, indice, circuit_db):
     return circuit_db
 
 
-def sort_by_symbol(circuit_db):
+def check_symbols_ordered(circuit_db):
+    symbol_int = list(circuit_db["symbol"].dropna().apply(lambda x: int(x.replace("th_",""))))
+    return symbol_int == sorted(symbol_int)
+
+def order_symbol_labels(circuit_db):
     """
-    this guy takes a pandas database and 
+    it happens that when a circuit is simplified, symbol labels get unsorted. This method corrects that (respecting the ordering in the gates)
     """
-    circuit_nan_symbol = circuit_db[circuit_db["symbol"].isna()]
-    shift_ind = pd.Float64Index(list(np.array(list(circuit_nan_symbol.index)) - 0.5))
-    circuit_nan_symbol.index = shift_ind
-
-    give_int = lambda x: int(x.replace("th_",""))
-
-    circuit_db_symbols_0 = circuit_db.loc[(circuit_db["symbol"].dropna()).index]
-    circuit_db_symbols_0["symbol_int"] = circuit_db_symbols_0["symbol"].apply(give_int)
-    circuit_db_symbols_0 = circuit_db_symbols_0.sort_values("symbol_int")
-    circuit_db_symbols_sorted = circuit_db_symbols_0.drop(columns=["symbol_int"])
-    circuit_db_symbols_sorted.index = pd.Float64Index(list(np.sort(list(circuit_db_symbols_sorted.index))))
-
-
-    ddd = pd.concat([circuit_nan_symbol, circuit_db_symbols_sorted], ignore_index=False, axis=0)
-    ddd = ddd.sort_index()
-    ddd = ddd.reset_index(drop=True)
-    return ddd
+    if check_symbols_ordered(circuit_db) is True:
+        inns = circuit_db["symbol"].dropna().index
+        filtered_db = circuit_db.loc[inns]["symbol"].astype(str)
+        news = ["th_{}".format(k) for k in np.sort(list(circuit_db["symbol"].dropna().apply(lambda x: int(x.replace("th_","")))))]
+        sss = pd.Series(news, index=inns)
+        nans = circuit_db["symbol"][circuit_db["symbol"].isna()]
+        ser = pd.concat([nans,sss])
+        ser = ser.sort_index()
+        circuit_db = circuit_db.drop(["symbol"], axis=1)
+        circuit_db.insert(loc=1, column="symbol",value=ser)
+    return circuit_db
 
 def type_get(x, translator):
     return (x-translator.number_of_cnots)//translator.n_qubits
 
 def check_rot(ind_gate, translator):
     return translator.number_of_cnots<= ind_gate <(3*translator.n_qubits + translator.number_of_cnots)
+
+def check_cnot(ind_gate, translator):
+    return translator.number_of_cnots> ind_gate# <(3*translator.n_qubits + translator.number_of_cnots)
 
 def qubit_get(x, translator):
     return (x-translator.number_of_cnots)%translator.n_qubits

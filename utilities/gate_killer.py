@@ -2,7 +2,7 @@ import numpy as np
 from utilities.compiling import *
 from utilities.vqe import *
 from utilities.discrimination import *
-from utilities.misc import shift_symbols_down, qubit_get, get_qubits_involved
+from utilities.misc import shift_symbols_down, qubit_get, get_qubits_involved, order_symbol_labels
 
 class GateKiller:
     def __init__(self,
@@ -70,6 +70,7 @@ class GateKiller:
         number_of_gates = len(self.translator.get_trainable_params_value(circuit_db))
         for murder_attempt in range(number_of_gates):
             circuit_db, new_cost, killed = self.kill_one_unitary(first_cost, circuit_db)
+            circuit_db = order_symbol_labels(circuit_db)
             print("kill 1qbit gate, try {}/{}. Increased by: {}%".format(murder_attempt, number_of_gates, (initial_cost-new_cost)/np.abs(initial_cost)))
             if killed is False:
                 break

@@ -1,7 +1,7 @@
 import numpy as np
 from utilities.circuit_database import CirqTranslater
 from utilities.templates import *
-from utilities.misc import get_qubits_involved, reindex_symbol, shift_symbols_down, type_get, check_rot
+from utilities.misc import get_qubits_involved, reindex_symbol, shift_symbols_down, type_get, check_rot, order_symbol_labels, check_cnot
 from utilities.variational import Minimizer
 from utilities.compiling import *
 
@@ -20,7 +20,7 @@ class Simplifier:
 
     TO DO:
             check if doing more than one loop of the rules help (in general it should, a stopping condition should be written)
-
+            check if apply check_rot() to haddamard damages!
     """
 
     def __init__(self,translator, untouchable=[], **kwargs):
@@ -61,15 +61,28 @@ class Simplifier:
         original_circuit, original_circuit_db = self.translator.give_circuit(original_circuit_db)
         gates_on_qubit, on_qubit_order = self.get_positional_dbs(original_circuit, original_circuit_db)
         simplified_db = original_circuit_db.copy()
+        rules=[]
         while simplified and cnt < self.max_cnt:
             simplified, simplified_circuit_db = rule(simplified_db, on_qubit_order, gates_on_qubit)
-            if simplified is True:
+            partiendo_db = simplified_circuit_db.copy()
+
+            simplified_circuit_db = order_symbol_labels(simplified_circuit_db)
+
+            ss = list(simplified_circuit_db["symbol"].dropna())
+            if np.all(np.array([ss.count(k) for k in ss])>1) is True:
+                partiendo_db.to_csv("testing/data/problem_db")
                 print(rule)
+                raise AttributeError("CHEEE")
+                break
+
             circuit, simplified_db = self.translator.give_circuit(simplified_circuit_db)
             gates_on_qubit, on_qubit_order = self.get_positional_dbs(circuit, simplified_db)
+            rules.append(rule)
             cnt+=1
             if cnt>100:
                 print("hey, i'm still simplifying, cnt{}".format(cnt))
+                #print(rules)
+
         return cnt, simplified_db
 
 
@@ -226,7 +239,6 @@ class Simplifier:
                         simplified_db.loc[pos_gate_to_add] = simplified_db.loc[pos_gate_to_add].replace(to_replace=value_2, value=value_1 + value_2)
                         simplified_db = simplified_db.drop(labels=[pos_gate_to_drop],axis=0)
                         simplified_db = simplified_db.reset_index(drop=True)
-
                         simplified_db = shift_symbols_down(self.translator, pos_gate_to_drop, simplified_db)
                         simplification = True
                         break
@@ -317,15 +329,7 @@ class Simplifier:
 
         return simplification, simplified_db
 
-
-
     def rule_6(self, simplified_db, on_qubit_order, gates_on_qubit):
-        """
-        move cnots to the left, rotations to the right.
-
-        IMPORTANT this won't work if the cirucit is too short!
-        """
-
 
         simplification = False
         for q, qubit_gates_path in gates_on_qubit.items():
@@ -336,11 +340,10 @@ class Simplifier:
                     break
 
                 ind_gate_p1 = qubit_gates_path[order_gate_on_qubit+1]
-                print(ind_gate_p1, qubit_gates_path, order_gate_on_qubit)
 
-                if (check_rot(ind_gate, self.translator) == True) and (check_rot(ind_gate_p1, self.translator) == False):
+                ## if i have a rotation and then a CNOT
+                if (check_rot(ind_gate, self.translator) is True) and (check_cnot(ind_gate_p1, self.translator) is True):
                     type_0 = type_get(ind_gate, self.translator)
-
                     control, target = self.translator.indexed_cnots[str(ind_gate_p1)]
 
                     this_qubit = q
@@ -348,53 +351,23 @@ class Simplifier:
                     other_qubits.remove(q)
                     other_qubit = other_qubits[0]
 
-                    if ((type_0 == 0) and (q==control)) or ((type_0== 1) and (q==target)):
-                        ### free to pass...
-                        if len(gates_on_qubit[other_qubit]) == 1:
+                    ### now it happens two interesting things: type0 == 0 AND q == control
+                    ### or type_0 == 1 AND q == target  then swap orders
+
+                    if ((type_0 == 0) and (q == control)) or ((type_0 == 1) and (q == target)):
+                        if len(on_qubit_order[q]) <2:
+                            simplification=False
+                        else:
+
                             simplification = True
-                        for qord_other, ind_gate_other in enumerate(gates_on_qubit[other_qubit]):
-                            if (ind_gate_other == ind_gate_p1): ## check if we find the same cnot on both qubits
-                                cnot_call__q = on_qubit_order[q][order_gate_on_qubit+1]
-                                if cnot_call__q == on_qubit_order[other_qubit][qord_other]:## now check if we are applying the gate on both qubits at same time
-                                    ### it might happen that there's no gate on the other qbit before the cnot, in that case free to comute.
-                                    if qord_other == 0:
-                                        simplification = True
-                                        break
-                                    else:
-                                        gate_in_other_qubit_before_cnot = simplified_db.loc[on_qubit_order[other_qubit][qord_other-1]]["ind"]
-                                        if check_rot(gate_in_other_qubit_before_cnot, self.translator) == True:
-                                            type_gate_other = type_get(gate_in_other_qubit_before_cnot, self.translator)
-                                            if type_0 != type_gate_other:
-                                                simplification = True
-                                                break
-                if simplification == True:
-                    if len(on_qubit_order[q]) <2:
-                        simplification=False
-                    else:
-                        info_rot = simplified_db.loc[on_qubit_order[q][order_gate_on_qubit]].copy()
-                        info_cnot_control = simplified_db.loc[on_qubit_order[q][order_gate_on_qubit+1]].copy()
 
-                        simplified_db.loc[on_qubit_order[q][order_gate_on_qubit]]  = info_cnot_control
-                        simplified_db.loc[on_qubit_order[q][order_gate_on_qubit+1]] = info_rot
+                            ###now we swap the order in which we apply the rotation and the CNOT.
+                            index_rot = on_qubit_order[q][order_gate_on_qubit]
+                            info_rot = simplified_db.loc[index_rot].copy()
+                            simplified_db = simplified_db.drop(labels=[index_rot],axis=0)#
+
+                            simplified_db.loc[on_qubit_order[q][order_gate_on_qubit+1 ] + 0.1] = info_rot
+                            simplified_db = simplified_db.sort_index().reset_index(drop=True)
+
+                            break
         return simplification, simplified_db
-
-
-
-
-### saving this just in case
-# shift_need = True
-# ssdb = simplified_db.copy()
-# while shift_need is True:
-#     ss = ssdb["symbol"].dropna()
-#     prev_s = int(list(ss)[0].replace("th_",""))
-#     for ind,s in zip(ss.index[1:], ss[1:]):
-#         current = int(s.replace("th_",""))
-#         if current - prev_s >1:
-#             print(current, prev_s)
-#             shift_need = True
-#             from_ind = ind
-#             ssdb = shift_symbols_down(simplifier.translator, from_ind, ssdb)
-#             break
-#         else:
-#             shift_need = False
-#             prev_s = current
