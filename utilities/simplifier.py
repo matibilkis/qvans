@@ -21,6 +21,7 @@ class Simplifier:
     TO DO:
             check if doing more than one loop of the rules help (in general it should, a stopping condition should be written)
             check if apply check_rot() to haddamard damages!
+            check the reset index thing !! important for funcionamoiento :E
     """
 
     def __init__(self,translator, untouchable=[], **kwargs):
@@ -64,24 +65,14 @@ class Simplifier:
         rules=[]
         while simplified and cnt < self.max_cnt:
             simplified, simplified_circuit_db = rule(simplified_db, on_qubit_order, gates_on_qubit)
-            partiendo_db = simplified_circuit_db.copy()
-
-            simplified_circuit_db = order_symbol_labels(simplified_circuit_db)
-
-            ss = list(simplified_circuit_db["symbol"].dropna())
-            if np.all(np.array([ss.count(k) for k in ss])>1) is True:
-                partiendo_db.to_csv("testing/data/problem_db")
-                print(rule)
-                raise AttributeError("CHEEE")
-                break
-
             circuit, simplified_db = self.translator.give_circuit(simplified_circuit_db)
             gates_on_qubit, on_qubit_order = self.get_positional_dbs(circuit, simplified_db)
-            rules.append(rule)
+            if simplified == True:
+                print(rule)
             cnt+=1
             if cnt>100:
                 print("hey, i'm still simplifying, cnt{}".format(cnt))
-                #print(rules)
+                # print(rules)
 
         return cnt, simplified_db
 
@@ -368,6 +359,6 @@ class Simplifier:
 
                             simplified_db.loc[on_qubit_order[q][order_gate_on_qubit+1 ] + 0.1] = info_rot
                             simplified_db = simplified_db.sort_index().reset_index(drop=True)
-
+                            simplified_db = order_symbol_labels(simplified_db)
                             break
         return simplification, simplified_db

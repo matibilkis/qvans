@@ -36,12 +36,13 @@ def u2_layer(translator,**kwargs):
 
 def u1_layer(translator, **kwargs):
     block_id = kwargs.get("block_id",0)
+    params = kwargs.get("params",True)
     qubits_ind = kwargs.get("qubits_ind",None)
     if qubits_ind is None:
         qubits_ind = list(range(translator.n_qubits))
-    dd = u1_db(translator,qubits_ind[0])
+    dd = u1_db(translator,qubits_ind[0], block_id=block_id, params = params)
     for i in qubits_ind[1:]:
-        dd = concatenate_dbs([dd,u1_db(translator,i, block_id=block_id)])
+        dd = concatenate_dbs([dd,u1_db(translator,i, block_id=block_id, params = params)])
     return dd
 
 def x_layer_db(translator, **kwargs):
@@ -51,7 +52,9 @@ def x_layer_db(translator, **kwargs):
 
 def z_layer_db(translator,**kwargs):
     block_id = kwargs.get("block_id",0)
-    zz = pd.DataFrame([gate_template(k, param_value=0., block_id=block_id) for k in [translator.number_of_cnots +j for j in range(translator.n_qubits)]])
+    random_param = kwargs.get("block_id", True)
+    random_param = lambda x: 0. if x is False else np.pi*np.random.random()
+    zz = pd.DataFrame([gate_template(k, param_value=random_param(random_param), block_id=block_id) for k in [translator.number_of_cnots +j for j in range(translator.n_qubits)]])
     return zz
 
 def cnot_layer(translator, **kwargs):

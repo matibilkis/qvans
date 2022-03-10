@@ -173,7 +173,7 @@ def order_symbol_labels(circuit_db):
     """
     it happens that when a circuit is simplified, symbol labels get unsorted. This method corrects that (respecting the ordering in the gates)
     """
-    if check_symbols_ordered(circuit_db) is True:
+    if check_symbols_ordered(circuit_db) is False:
         inns = circuit_db["symbol"].dropna().index
         filtered_db = circuit_db.loc[inns]["symbol"].astype(str)
         news = ["th_{}".format(k) for k in np.sort(list(circuit_db["symbol"].dropna().apply(lambda x: int(x.replace("th_","")))))]
@@ -196,3 +196,13 @@ def check_cnot(ind_gate, translator):
 
 def qubit_get(x, translator):
     return (x-translator.number_of_cnots)%translator.n_qubits
+
+
+def max_diff(translator, c1, c2, matrix=False):
+    u1 = translator.give_circuit(c1, unresolved=False)[0].unitary()
+    u2 = translator.give_circuit(c2, unresolved=False)[0].unitary()
+    diff = u1-u2
+    if matrix is False:
+        return np.max(np.abs(diff))#, diff
+    else:
+        return np.max(np.abs(diff)), diff
