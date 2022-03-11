@@ -1,7 +1,7 @@
 import numpy as np
 from utilities.circuit_database import CirqTranslater
 from utilities.templates import *
-from utilities.misc import get_qubits_involved, reindex_symbol, shift_symbols_down, type_get, check_rot, order_symbol_labels, check_cnot
+from utilities.misc import get_qubits_involved, reindex_symbol, shift_symbols_down, shift_symbols_up, type_get, check_rot, order_symbol_labels, check_cnot, check_symbols_ordered
 from utilities.variational import Minimizer
 from utilities.compiling import *
 
@@ -22,16 +22,20 @@ class Simplifier:
             check if doing more than one loop of the rules help (in general it should, a stopping condition should be written)
             check if apply check_rot() to haddamard damages!
             check the reset index thing !! important for funcionamoiento :E
+            rule_4: do we trust pandas.replace ?
+            rule_6 move to left or move to right (just try both and see which leads to simplification), that'd be actually a (controlled) rule_7
+
     """
 
-    def __init__(self,translator, untouchable=[], **kwargs):
+    def __init__(self,translator, **kwargs):
         self.translator = translator
-        self.max_cnt = kwargs.get('max_cnt',500)
+        self.max_cnt = kwargs.get('max_cnt',150)
+        self.apply_relatives_to_first = kwargs.get("apply_relatives_to_first",True)
         self.absolute_rules = [self.rule_2, self.rule_4,  self.rule_5, self.rule_6]# this are rules that should be applied to any block ,regardless of its position ..
         self.relative_rules = [self.rule_1, self.rule_3] ##rule 1 and 3 are not always applied since the incoming state is likely not |0> for general block_id's. (suppose you have a channel...)
         self.loop_the_rules = 1 ### one could think on looping more than ones the rule
-        self.apply_relatives_to_first = False
-        self.untouchable = untouchable ### for instance, channel blocks...
+        self.apply_relatives_to_first = True
+        self.untouchable = self.translator.untouchable_blocks ### for instance, channel blocks...
 
     def reduce_circuit(self, circuit_db):
         simplified_db = circuit_db.copy()
@@ -44,6 +48,9 @@ class Simplifier:
                     blocked_circuit[block] = simplified_db[simplified_db["block_id"] == block]
                     for rule in self.absolute_rules:
                         cnt, blocked_circuit[block]  = self.apply_rule(blocked_circuit[block]  , rule)
+                        #if check_symbols_ordered(blocked_circuit[block]) is False:
+                    #        blocked_circuit[block].to_csv("testing/data/dcl")
+                #            raise AttributeError("ojo")
                         final_cnt += cnt
                     if (block == 0) and (self.apply_relatives_to_first == True):
                         for rule in self.relative_rules:
@@ -65,15 +72,17 @@ class Simplifier:
         rules=[]
         while simplified and cnt < self.max_cnt:
             simplified, simplified_circuit_db = rule(simplified_db, on_qubit_order, gates_on_qubit)
+            if check_symbols_ordered(simplified_circuit_db) is False:
+                simplified_db.to_csv("testing/data/dcl")
+                raise AttributeError("ojo {}".format(rule))
             circuit, simplified_db = self.translator.give_circuit(simplified_circuit_db)
             gates_on_qubit, on_qubit_order = self.get_positional_dbs(circuit, simplified_db)
             if simplified == True:
-                print(rule)
+                print("simplified using ",rule)
             cnt+=1
-            if cnt>100:
+            if cnt>int(self.max_cnt)/2:
                 print("hey, i'm still simplifying, cnt{}".format(cnt))
                 # print(rules)
-
         return cnt, simplified_db
 
 
@@ -126,13 +135,14 @@ class Simplifier:
             for order_gate_on_qubit, ind_gate in enumerate(qubit_gates_path):
                 if ind_gate < self.translator.number_of_cnots:
                     control, target = self.translator.indexed_cnots[str(ind_gate)]
-                    if (q == control) and (order_gate_on_qubit == 0):
+                    if (q == control) and (order_gate_on_qubit == 0) and (len(qubit_gates_path)>1):
                         pos_gate_to_drop = on_qubit_order[q][order_gate_on_qubit]
 
-                        block_id = circuit_db.loc[pos_gate_to_drop]["block_id"]
-                        simplified_db.loc[int(pos_gate_to_drop)+0.1] = gate_template(self.translator.number_of_cnots + self.translator.n_qubits + control, param_value=0.0, block_id=circuit_db.loc[0]["block_id"])
-                        simplified_db.loc[int(pos_gate_to_drop)+0.11] = gate_template(self.translator.number_of_cnots + self.translator.n_qubits + target, param_value=0.0, block_id=circuit_db.loc[0]["block_id"])
-
+                        block_id = simplified_db.loc[pos_gate_to_drop]["block_id"]
+                        # simplified_db = shift_symbols_up(self.translator, int(pos_gate_to_drop), simplified_db)
+                        # simplified_db = shift_symbols_up(self.translator, int(pos_gate_to_drop), simplified_db)
+                        # simplified_db.loc[int(pos_gate_to_drop)+0.1] = gate_template(self.translator.number_of_cnots + self.translator.n_qubits + control, param_value=0.0, block_id=block_id)
+                        # simplified_db.loc[int(pos_gate_to_drop)+0.11] = gate_template(self.translator.number_of_cnots + self.translator.n_qubits + target, param_value=0.0, block_id=block_id)
                         simplified_db = simplified_db.drop(labels=[pos_gate_to_drop],axis=0)
 
                         simplification = True
@@ -227,11 +237,13 @@ class Simplifier:
                         value_1 = simplified_db.loc[pos_gate_to_drop]["param_value"]
                         value_2 = simplified_db.loc[pos_gate_to_add]["param_value"]
 
+                        ## i'm skeptical on this, would be better to access from param_value maybe.
                         simplified_db.loc[pos_gate_to_add] = simplified_db.loc[pos_gate_to_add].replace(to_replace=value_2, value=value_1 + value_2)
                         simplified_db = simplified_db.drop(labels=[pos_gate_to_drop],axis=0)
                         simplified_db = simplified_db.reset_index(drop=True)
                         simplified_db = shift_symbols_down(self.translator, pos_gate_to_drop, simplified_db)
                         simplification = True
+
                         break
         return simplification, simplified_db
 
@@ -323,15 +335,15 @@ class Simplifier:
     def rule_6(self, simplified_db, on_qubit_order, gates_on_qubit):
 
         simplification = False
+        if check_symbols_ordered(simplified_db) == False:
+            raise AttributeError("pero cheee!!!!!")
         for q, qubit_gates_path in gates_on_qubit.items():
             if simplification is True:
                 break
             for order_gate_on_qubit, ind_gate in enumerate(qubit_gates_path[:-1]):
                 if simplification is True:
                     break
-
                 ind_gate_p1 = qubit_gates_path[order_gate_on_qubit+1]
-
                 ## if i have a rotation and then a CNOT
                 if (check_rot(ind_gate, self.translator) is True) and (check_cnot(ind_gate_p1, self.translator) is True):
                     type_0 = type_get(ind_gate, self.translator)
@@ -344,14 +356,11 @@ class Simplifier:
 
                     ### now it happens two interesting things: type0 == 0 AND q == control
                     ### or type_0 == 1 AND q == target  then swap orders
-
                     if ((type_0 == 0) and (q == control)) or ((type_0 == 1) and (q == target)):
                         if len(on_qubit_order[q]) <2:
                             simplification=False
                         else:
-
                             simplification = True
-
                             ###now we swap the order in which we apply the rotation and the CNOT.
                             index_rot = on_qubit_order[q][order_gate_on_qubit]
                             info_rot = simplified_db.loc[index_rot].copy()

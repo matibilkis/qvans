@@ -1,0 +1,2 @@
+I thought it was rule_6 the one that was not working, but actually was rule_1 since i was not uprising the symbols.
+in the end i put a control if the circuit has more than a cnot only in that qubit, i quit it without adding new symbols.

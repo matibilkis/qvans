@@ -201,8 +201,12 @@ def qubit_get(x, translator):
 def max_diff(translator, c1, c2, matrix=False):
     u1 = translator.give_circuit(c1, unresolved=False)[0].unitary()
     u2 = translator.give_circuit(c2, unresolved=False)[0].unitary()
-    diff = u1-u2
+    diff = (u1-u2)[:,0]
     if matrix is False:
         return np.max(np.abs(diff))#, diff
     else:
-        return np.max(np.abs(diff)), diff
+        return np.max(np.abs(diff)), [u1,u2]
+
+
+def a_bt(a,b):
+    return np.einsum('ij,jm->im',np.conjugate(a).T,b)
