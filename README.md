@@ -1,142 +1,297 @@
-<br />
-<p align="center">
+# VAns: Variable Ansatz for Variational Quantum Algorithms
 
+[![arXiv](https://img.shields.io/badge/arXiv-2103.06712-b31b1b.svg)](https://arxiv.org/abs/2103.06712)
+[![DOI](https://img.shields.io/badge/DOI-10.1007%2Fs42484--023--00132--1-blue.svg)](https://doi.org/10.1007/s42484-023-00132-1)
+[![License](https://img.shields.io/badge/License-Research%20Use%20Only-blue.svg)](LICENSE)
 
-  <h1 align="center">VANs </h3>
+> **A semi-agnostic ansatz with variable structure for variational quantum algorithms**
 
-  <p align="center">
-  <h2>A semi-agnostic ansatz with variable structure for quantum machine learning </h2>
+This repository contains the official implementation of **VAns (Variable Ansatz)**, a variable structure approach to build ansatzes for Variational Quantum Algorithms (VQAs). VAns applies a set of rules to both grow and remove quantum gates in an informed manner during optimization, making it ideally suited to mitigate trainability and noise-related issues by keeping the ansatz shallow.
 
+## 📚 Citation
 
-   <!-- <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a> -->
-  </p>
-</p>
-<p> This repository contains an implementation of <a href="https://arxiv.org/abs/2103.06712"><strong>A semi-agnostic ansatz with variable structure for quantum machine learning</strong></a>.</p>
-<!-- TABLE OF CONTENTS -->
-<details open="open">
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#overview">Overview</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#contributing">Contributing</a></li>
+If you use VAns in your research, please cite:
 
-  </ol>
-</details>
+```bibtex
+@article{bilkis2023semi,
+  title={A semi-agnostic ansatz with variable structure for variational quantum algorithms},
+  author={Bilkis, M. and Cerezo, M. and Verdon, G. and Coles, P. J. and Cincio, L.},
+  journal={Quantum Machine Intelligence},
+  volume={5},
+  number={43},
+  year={2023},
+  publisher={Springer},
+  doi={10.1007/s42484-023-00132-1},
+  arxiv={2103.06712}
+}
+```
 
+## 🎯 Overview
 
+VAns explores the hyperspace of architectures of parametrized quantum circuits to create short-depth ansatzes for VQA applications. The algorithm:
 
-<!-- ABOUT THE PROJECT -->
-## Overview
+1. **Starts** with a (potentially non-trivial) initial circuit and optimizes its parameters until convergence
+2. **Inserts** blocks of gates initialized to the identity, so that ansatzes at contiguous steps belong to an equivalence class
+3. **Simplifies** the circuit by eliminating gates and finding the shortest circuit
+4. **Accepts or rejects** modifications based on cost function improvements
 
-How would you walk through the architecture hyperspace to find your favorite quantum circuit? How to do so when both intuition and gradients vanish? Just go for our Variable Ansatz (VAns) algorithm!
-  <p align="center">
-<img src="figures_readme/fig1.jpeg" style="width:500px;height:500px;">
-</p>
-* QML trains a parametrized quantum circuit to solve a given problem, encoded in some cost function. Depending on the circuit, this approach can potentially run into trouble, since trainability issues and quantum hardware noise essentially forbid the cost function to be minimized.
-
-* For this, we very much motivate the idea of optimizing both circuit parameters 𝗮𝗻𝗱 circuit structure in a semi-agnostic fashion :robot: :robot:.
-
-* This consists on randomly placing blocks of gates in the circuit, and accept or reject those modifications if the cost function is actually lowered or not. Crucially, we prevent the circuit from over-growing by applying some circuit-compression rules in a problem-informed way.
+This mechanism prevents circuits from over-growing and gets the most out of available quantum resources.
 
 <p align="center">
-<img src="figures_readme/fig2.png" alt="Logo" style="width:300px;height:300px;">
+  <img src="figures_readme/fig1.jpeg" alt="VAns Algorithm" width="500">
 </p>
 
-* In turn, this mechanism gets the most out of the available quantum resources. For example, in VQE, we find that cost value (energy) is lower than that of the circuits usually employed, if using the same resources.
-<p align="center">
-<img src="figures_readme/fig3.jpeg" alt="Logo" style="width:300px;height:300px;">
-</p>
+## ✨ Features
 
-## Built With
+VAns has been successfully applied to:
 
-This implementation of |VANs> has been written in Python 3, using
-* [Cirq](https://quantumai.google/cirq)
-* [TensorFlowQuantum](https://www.tensorflow.org/quantum)
-* [OpenFermion](https://quantumai.google/openfermion)
+### 1. **Variational Quantum Eigensolver (VQE)**
+- **Condensed Matter Systems**: Transverse Field Ising Model (TFIM), XXZ model
+- **Quantum Chemistry**: H₂, H₄, LiH molecules
+- Finds lower energy states than fixed-structure ansatzes using the same resources
 
+### 2. **Quantum Autoencoder**
+- Data compression for quantum states
+- Optimizes circuit structure for efficient state encoding/decoding
 
-<!-- GETTING STARTED -->
-## Getting Started
+### 3. **Unitary Compilation**
+- Compiles target unitaries into optimized quantum circuits
+- Reduces circuit depth while maintaining fidelity
 
-How to use VANs on a local machine?
+## 🚀 Quick Start
 
 ### Prerequisites
 
-Have Python 3 installed.
+- Python 3.7-3.9 (for TensorFlow Quantum compatibility)
+- pip or conda
 
 ### Installation
 
-1. Clone the repo
-   ```sh
+1. **Clone the repository:**
+   ```bash
    git clone https://github.com/matibilkis/qvans.git
+   cd qvans
    ```
-2. Optional, but highly recommended. Create a virtual environment to avoid conflict with other dependencies
-  ```sh
-  python3 -m virtualenv {NameOfVirtualEnv}
-  ```
-  And activate the virtual environment
-  ```sh
-  source {NameOfVirtualEnv}/bin/activate.sh
-  ```
-3. Install libraries
-   ```sh
-   (NameOfVirtualEnv) pip3 install -r requirements.txt
+
+2. **Create a virtual environment (recommended):**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
-4. Now you are ready to use VANs!
-  ```sh
-  (NameOfVirtualEnv) python3 meta_main.py
-  ```
-5. You might also want to run the tutorials from the virtual environment and thus need to configure the jupyter notebook (that's why jupyter is included in the requirements.txt). To configure it, simple run
-```sh
-(NameOfVirtualEnv) ipython kernel --user --name NameOfVirtualEnv
+
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+   For different TensorFlow Quantum versions, see [Version Management](#-version-management).
+
+4. **Run VAns:**
+   ```bash
+   python3 main.py --problem TFIM --J 0.6 --g 1.0 --n_qubits 4
+   ```
+
+## 📖 Usage
+
+### Basic VQE Example
+
+For a Transverse Field Ising Model (TFIM) with 4 qubits, J=0.6, g=1.0:
+
+```bash
+python3 main.py --problem TFIM --J 0.6 --g 1.0 --n_qubits 4 \
+    --reps 150 --qepochs 10000 --qlr 0.01
 ```
 
-<!-- USAGE EXAMPLES -->
-## Usage
+### Quantum Chemistry Example
 
-The code we present comes with a series of pre-defined Hamiltonians and cost functions. It is up to the user to define new hamiltonians, which are Transverse Field Ising Model (TFIM), XXZ model, chemical hamiltonians (H2, H4, LiH) and the autoencoder.
+For H₂ molecule at bond length 1.5 Å:
 
-Note that each of the pre-defined Hamiltonians has one (or more) free paramters, such as magnetic field strengths or bond lengths. This setting can be specified by parsing arguments to main.py file. For example, if willing to work with the TFIM, given by for a configuration of TFIM,
+```bash
+python3 main.py --n_qubits 4 --problem_config '{"problem": "H2", "geometry": [("H", (0., 0., 0.)), ("H", (0., 0., 1.5))], "multiplicity": 1, "charge": 0, "basis": "sto-3g"}' \
+    --reps 200 --qepochs 10000
+```
 
-   <a href="https://www.codecogs.com/eqnedit.php?latex=H=-J\sum_{j=1}^n&space;\sigma_j^x\sigma_{j&plus;1}^x-g\sum_{j=1}^n&space;\sigma_j^x\,," target="_blank"><img src="https://latex.codecogs.com/gif.latex?H=-J\sum_{j=1}^n&space;\sigma_j^x\sigma_{j&plus;1}^x-g\sum_{j=1}^n&space;\sigma_j^x\,," title="H=-J\sum_{j=1}^n \sigma_j^x\sigma_{j+1}^x-g\sum_{j=1}^n \sigma_j^x\,," /></a>
+### Parameter Sweeps
 
-for n=4, J=0.5, g=1, we get
+Use `meta_main.py` to sweep over parameters:
 
-  ```sh
-  python3 main.py --problem TFIM --J 0.6 --g 1 --n_qubits 4
-  ```
-Importantly, the hyperparameters of the algorithm can be modified as well, feel free to peer at main.py file for all parsing arguments.
+```python
+# Edit meta_main.py to customize sweeps
+js = np.arange(0.5, 1.6, 0.1)
+for J in js:
+    problem_config = dict_to_json({"problem": "TFIM", "g": 1.0, "J": J})
+    instruction = "python3 main.py --n_qubits 4 --problem_config {}".format(problem_config)
+    insts.append(instruction)
+```
 
-Finally, it is ussually of great utility to sweep over a certain parameter(s). To that end, we use the meta_main.py (where, at the cost of elegancy, some templates can be found under commented format). For instance, if willing to sweep over J values (say, from 0.5 to 1.5), one would modify meta_main.py by setting
+Then run:
+```bash
+python3 meta_main.py
+```
 
-    ```
-    insts=[]
-    js = np.arange(0.5,1.6,0.1)
-    for J in js:
-        problem_config = dict_to_json({"problem" : "TFIM", "g":1.0, "J": bond})
-        instruction = "python3 main.py --n_qubits 4 --problem_config {}".format(problem_config)
-        insts.append(instruction)
-    ```
-and consequently run it:
+### Command-Line Arguments
 
-  ```sh
-  python3 meta_main.py
-  ```
-Moreover, a series of <a href= https://github.com/matibilkis/qvans/tree/master/tutorials>tutorials</a> have been written in order to demonstrate how to use VANs.
+#### General Configuration
+- `--n_qubits`: Number of qubits (default: 8)
+- `--reps`: Number of VAns iterations (default: 150)
+- `--path_results`: Path to save results (default: "../data-vans/")
+- `--problem_config`: JSON string with problem configuration
 
-<!-- CONTRIBUTING -->
-## Contributing
+#### VQE Options
+- `--qepochs`: Maximum training epochs per VQE (default: 10000)
+- `--qlr`: Learning rate (default: 0.01)
+- `--training_patience`: Early stopping patience (default: 1000)
+- `--optimizer`: Optimizer choice: "adam", "sgd", "adagrad" (default: "adam")
+- `--max_vqe_time`: Maximum time per VQE in seconds (default: 300)
 
-Don't hesitate in getting in touch to contribute with this project :)
+#### VAns Hyperparameters
+- `--initialization`: Initial ansatz: "hea", "separable", "xz" (default: "hea")
+- `--init_layers_hea`: Number of initial HEA layers (default: 1)
+- `--acceptance_percentage`: Energy improvement threshold for acceptance (default: 0.01)
+- `--rate_iids_per_step`: Rate of identity insertions per step (default: 1.5)
+- `--selector_temperature`: Temperature for gate selection (default: 10.0)
+- `--wait_to_get_back`: Iterations before reverting to best circuit (default: 25)
+
+## 📚 Tutorials
+
+Interactive Jupyter notebooks are available in the `tutorials/` directory:
+
+- **`0_introduction.ipynb`**: Basic circuit construction and VQE
+- **`1_VANs_methods.ipynb`**: VAns algorithm components
+- **`2_VANs_loop.ipynb`**: Complete VAns workflow
+
+To run tutorials:
+```bash
+jupyter notebook tutorials/
+```
+
+## 🔬 Reproducibility
+
+### Environment Setup
+
+For reproducibility, we recommend using the exact versions specified in `requirements.txt`:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Paper Results
+
+The results from the paper can be reproduced using the default parameters. Key configurations:
+
+- **TFIM**: `--problem TFIM --J 0.5 --g 1.0 --n_qubits 4`
+- **XXZ**: `--problem XXZ --J 1.0 --g 1.0 --n_qubits 4`
+- **H₂**: See quantum chemistry example above
+- **H₄**: `--problem H4 --geometry [...] --n_qubits 8`
+
+### Version Compatibility
+
+| Component | Version | Notes |
+|-----------|---------|-------|
+| Python | 3.7-3.9 | Required for TFQ compatibility |
+| TensorFlow | 2.3.1 | Compatible with TFQ 0.4.0 |
+| TensorFlow Quantum | 0.4.0 | Primary version |
+| Cirq | 0.9.1 | Quantum circuit library |
+| OpenFermion | 1.0.0 | Quantum chemistry support |
+
+## 🏗️ Project Structure
+
+```
+qvans/
+├── main.py                 # Main VAns execution script
+├── meta_main.py            # Parameter sweep script
+├── requirements.txt        # Python dependencies
+├── utilities/              # Core VAns modules
+│   ├── variational.py     # VQE and Autoencoder classes
+│   ├── evaluator.py       # Circuit evaluation and acceptance
+│   ├── idinserter.py      # Identity insertion (growth)
+│   ├── simplifier.py      # Circuit simplification
+│   ├── unitary_killer.py  # Gate removal
+│   ├── circuit_basics.py  # Basic circuit operations
+│   ├── chemical.py        # Quantum chemistry Hamiltonians
+│   └── qmodels.py         # Quantum neural network models
+├── tutorials/              # Jupyter notebook tutorials
+├── examples_repository/    # Example results
+└── multivans/              # Experimental: Quantum combs (see below)
+```
+
+## 🔬 Experimental: MultiVAns (Quantum Combs)
+
+**⚠️ Status: Experimental/Unfinished**
+
+The `multivans/` directory contains an experimental extension of VAns for optimizing **quantum combs** with communication channels. This work extends VAns to multi-party quantum protocols.
+
+**Note**: This code was previously maintained in a separate repository ([github.com/matibilkis/multivans](https://github.com/matibilkis/multivans)) but has been merged into this repository for convenience. The separate repository is no longer actively maintained.
+
+### Important Notes
+
+- **State**: Unfinished research code (4+ years old)
+- **Framework**: Written in PennyLane (older version)
+- **Compatibility**: May not work with current dependencies
+- **Purpose**: Research exploration of quantum combs optimization
+
+### MultiVAns Features
+
+- Quantum channel discrimination
+- Multi-party quantum protocols
+- Circuit database representation
+- Template-based circuit construction
+
+### Usage Warning
+
+MultiVAns is provided for research purposes only. The codebase:
+- Uses older PennyLane APIs
+- May require manual dependency resolution
+- Has incomplete documentation
+- Is not actively maintained
+
+To explore MultiVAns:
+```bash
+cd multivans
+# Review README.md for specific setup instructions
+# Note: May require older dependency versions
+```
+
+## 🧪 Testing
+
+Run basic functionality tests:
+
+```bash
+python3 -c "from utilities.variational import VQE; print('VQE import successful')"
+python3 -c "from utilities.evaluator import Evaluator; print('Evaluator import successful')"
+```
+
+## 📊 Results
+
+Example results are stored in `examples_repository/`. Each run generates:
+- Circuit structures (`.pkl` files)
+- Energy evolution (`.npy` files)
+- Training metadata
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+## 📝 License
+
+This software is provided for research and educational purposes. See the [LICENSE](LICENSE) file for details and disclaimers regarding government funding and use restrictions.
+
+## 🙏 Acknowledgments
+
+- Los Alamos National Laboratory (LANL)
+- Sandbox@Alphabet for TPU-based Floq simulator access
+- Port d'Informació Científica, Barcelona for computational resources
+
+## 📧 Contact
+
+For questions or issues, please open a GitHub issue or contact the authors.
+
+## 📖 References
+
+1. Bilkis, M., et al. "A semi-agnostic ansatz with variable structure for variational quantum algorithms." *Quantum Machine Intelligence* 5, 43 (2023).
+2. Preskill, J. "NISQ-era and beyond." *Quantum* 2, 79 (2018).
+3. Cerezo, M., et al. "Variational quantum algorithms." *Nature Reviews Physics* 3, 625-644 (2021).
+
+---
+
+**Note**: This implementation corresponds to the published paper. For the latest experimental features, see the `multivans/` directory (experimental status).

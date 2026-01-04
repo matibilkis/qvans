@@ -1,8 +1,20 @@
-numpy
+# VAns Core Dependencies
+# Python 3.7-3.9 recommended for TensorFlow Quantum compatibility
+
+# Core quantum computing libraries
+numpy>=1.19.0,<1.20.0
 sympy==1.5
 cirq==0.9.1
 tensorflow-quantum==0.4.0
 tensorflow==2.3.1
-tqdm
+
+# Quantum chemistry
 openfermion==1.0.0
 openfermionpyscf==0.5
+
+# Utilities
+tqdm>=4.50.0
+
+# Optional: Jupyter for tutorials
+# jupyter>=1.0.0
+# matplotlib>=3.3.0
